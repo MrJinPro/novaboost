@@ -297,6 +297,9 @@ export interface AdminUserItem {
   tariff_id?: string | null;
   tariff_name?: string | null;
   license_expires_at?: string | null;
+  is_banned?: boolean;
+  banned_at?: string | null;
+  banned_reason?: string | null;
 }
 
 export interface ListUsersResponse {
@@ -332,6 +335,21 @@ export interface AdminRevokeUserLicenseResponse {
   license_key: string;
 }
 
+export interface AdminSetUserBanResponse {
+  status: string;
+  user_id: string;
+  username: string;
+  banned: boolean;
+  banned_at: string | null;
+  banned_reason: string | null;
+}
+
+export interface AdminDeleteUserResponse {
+  status: string;
+  user_id: string;
+  username: string;
+}
+
 const buildQuery = (params: Record<string, string | number | undefined | null>): string => {
   const entries = Object.entries(params)
     .filter(([, v]) => v !== undefined && v !== null && String(v).length > 0)
@@ -364,5 +382,14 @@ export const adminApi = {
     apiRequest<AdminRevokeUserLicenseResponse>(`/v2/admin/users/${encodeURIComponent(userId)}/license/revoke`, {
       method: 'POST',
       body: JSON.stringify({}),
+    }),
+  setUserBan: (userId: string, banned: boolean, reason?: string) =>
+    apiRequest<AdminSetUserBanResponse>(`/v2/admin/users/${encodeURIComponent(userId)}/ban`, {
+      method: 'POST',
+      body: JSON.stringify({ banned, reason: reason?.trim() || null }),
+    }),
+  deleteUser: (userId: string) =>
+    apiRequest<AdminDeleteUserResponse>(`/v2/admin/users/${encodeURIComponent(userId)}`, {
+      method: 'DELETE',
     }),
 };

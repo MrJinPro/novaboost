@@ -112,6 +112,28 @@ const Admin = () => {
     },
   });
 
+  const setBanMutation = useMutation({
+    mutationFn: (vars: { userId: string; banned: boolean }) => adminApi.setUserBan(vars.userId, vars.banned),
+    onSuccess: async () => {
+      toast.success("Статус бана обновлён");
+      await queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+    },
+    onError: (err) => {
+      toast.error(err instanceof Error ? err.message : "Не удалось обновить бан");
+    },
+  });
+
+  const deleteUserMutation = useMutation({
+    mutationFn: (vars: { userId: string }) => adminApi.deleteUser(vars.userId),
+    onSuccess: async () => {
+      toast.success("Пользователь удалён");
+      await queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+    },
+    onError: (err) => {
+      toast.error(err instanceof Error ? err.message : "Не удалось удалить пользователя");
+    },
+  });
+
   if (meQuery.isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -239,13 +261,14 @@ const Admin = () => {
                         <TableHead>Роль</TableHead>
                             {canEditRoles && <TableHead>Тариф</TableHead>}
                             {canEditRoles && <TableHead>Лицензия до</TableHead>}
+                        {canEditRoles && <TableHead>Статус</TableHead>}
                             {canEditRoles && <TableHead>Действия</TableHead>}
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {users.length === 0 ? (
                         <TableRow>
-                              <TableCell colSpan={canEditRoles ? 7 : 4} className="text-center text-muted-foreground py-10">
+                          <TableCell colSpan={canEditRoles ? 8 : 4} className="text-center text-muted-foreground py-10">
                             Ничего не найдено
                           </TableCell>
                         </TableRow>
@@ -344,6 +367,16 @@ const Admin = () => {
 
                               {canEditRoles && (
                                 <TableCell>
+                                  {u.is_banned ? (
+                                    <span className="text-sm text-destructive">banned</span>
+                                  ) : (
+                                    <span className="text-sm text-muted-foreground">active</span>
+                                  )}
+                                </TableCell>
+                              )}
+
+                              {canEditRoles && (
+                                <TableCell>
                                   <div className="flex gap-2">
                                     <Button
                                       variant="outline"
@@ -383,10 +416,44 @@ const Admin = () => {
                                         !u.license_expires_at ||
                                         setLicenseMutation.isPending ||
                                         extendLicenseMutation.isPending ||
-                                        revokeLicenseMutation.isPending
+                                        revokeLicenseMutation.isPending ||
+                                        setBanMutation.isPending ||
+                                        deleteUserMutation.isPending
                                       }
                                     >
                                       Отозвать
+                                    </Button>
+
+                                    <Button
+                                      variant="outline"
+                                      onClick={() => setBanMutation.mutate({ userId: u.id, banned: !u.is_banned })}
+                                      disabled={
+                                        setLicenseMutation.isPending ||
+                                        extendLicenseMutation.isPending ||
+                                        revokeLicenseMutation.isPending ||
+                                        setBanMutation.isPending ||
+                                        deleteUserMutation.isPending
+                                      }
+                                    >
+                                      {u.is_banned ? "Разбан" : "Бан"}
+                                    </Button>
+
+                                    <Button
+                                      variant="outline"
+                                      onClick={() => {
+                                        if (confirm(`Удалить пользователя ${u.username}? Это необратимо.`)) {
+                                          deleteUserMutation.mutate({ userId: u.id });
+                                        }
+                                      }}
+                                      disabled={
+                                        setLicenseMutation.isPending ||
+                                        extendLicenseMutation.isPending ||
+                                        revokeLicenseMutation.isPending ||
+                                        setBanMutation.isPending ||
+                                        deleteUserMutation.isPending
+                                      }
+                                    >
+                                      Удалить
                                     </Button>
                                   </div>
                                 </TableCell>
