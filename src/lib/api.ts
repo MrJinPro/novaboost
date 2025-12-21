@@ -80,25 +80,37 @@ const apiRequest = async <T>(
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
+      const detail = (errorData as any)?.detail as string | undefined;
       
       // Map server errors to user-friendly messages
       if (response.status === 401) {
-        throw new Error('Неверный логин или пароль');
+        if (endpoint === '/v2/auth/login' || endpoint === '/v2/auth/register') {
+          throw new Error('Неверный логин или пароль');
+        }
+        throw new Error(detail || 'Нужно войти в аккаунт');
       }
       if (response.status === 409) {
         throw new Error('Пользователь уже существует');
       }
       if (response.status === 400) {
-        if (errorData.detail?.includes('username')) {
+        if (detail?.includes('username')) {
           throw new Error('Неверный формат логина');
         }
-        if (errorData.detail?.includes('password')) {
+        if (detail?.includes('password')) {
           throw new Error('Пароль должен быть минимум 6 символов');
         }
-        throw new Error(errorData.detail || 'Неверные данные');
+        throw new Error(detail || 'Неверные данные');
       }
       if (response.status === 404) {
-        throw new Error('Сервер недоступен');
+        // FastAPI default for unknown route is usually {"detail":"Not Found"}.
+        // But business-logic may also use 404 (e.g. license key not found).
+        if (detail && detail !== 'Not Found') {
+          if (detail === 'license not found') {
+            throw new Error('Ключ лицензии не найден');
+          }
+          throw new Error(detail);
+        }
+        throw new Error('Эндпоинт не найден (возможен старый backend или неверный proxy)');
       }
       
       throw new Error(errorData.detail || errorData.message || 'Ошибка запроса');
