@@ -1,6 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { getToken, removeToken } from "@/lib/api";
+import { authApi, getToken, removeToken } from "@/lib/api";
 import starLogo from "@/assets/star-logo.png";
 
 interface HeaderProps {
@@ -12,6 +13,16 @@ export const Header = ({ isLoggedIn, onLogout }: HeaderProps) => {
   const location = useLocation();
   const token = getToken();
   const loggedIn = isLoggedIn ?? !!token;
+
+  const meQuery = useQuery({
+    queryKey: ["me"],
+    queryFn: authApi.getMe,
+    enabled: loggedIn,
+    retry: false,
+  });
+
+  const role = (meQuery.data?.role || "user").toLowerCase();
+  const canSeeAdmin = loggedIn && role !== "user";
 
   const handleLogout = () => {
     removeToken();
@@ -34,6 +45,13 @@ export const Header = ({ isLoggedIn, onLogout }: HeaderProps) => {
         <nav className="flex items-center gap-4">
           {loggedIn ? (
             <>
+              {canSeeAdmin && (
+                <Link to="/admin">
+                  <Button variant="ghost" size="sm">
+                    Админка
+                  </Button>
+                </Link>
+              )}
               <Link to="/profile">
                 <Button variant="ghost" size="sm">
                   Профиль

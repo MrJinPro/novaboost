@@ -112,6 +112,10 @@ const apiRequest = async <T>(
         }
         throw new Error('Эндпоинт не найден (возможен старый backend или неверный proxy)');
       }
+
+      if (response.status === 403) {
+        throw new Error(detail || 'Доступ запрещён');
+      }
       
       throw new Error(errorData.detail || errorData.message || 'Ошибка запроса');
     }
@@ -134,6 +138,7 @@ export interface AuthResponse {
 export interface UserProfile {
   id: string;
   username: string;
+  role?: string;
   plan: string | null;
   tariff_name: string | null;
   allowed_platforms: string[];
@@ -272,4 +277,53 @@ export const planDetails: Record<string, { description: string; features: string
     ],
     available: false,
   },
+};
+
+// Admin API
+export interface RoleItem {
+  id: string;
+}
+
+export interface RolesResponse {
+  items: RoleItem[];
+}
+
+export interface AdminUserItem {
+  id: string;
+  username: string;
+  role: string;
+  created_at: string;
+  tiktok_username?: string | null;
+}
+
+export interface ListUsersResponse {
+  items: AdminUserItem[];
+  total: number;
+}
+
+export interface SetUserRoleResponse {
+  status: string;
+  user_id: string;
+  username: string;
+  role: string;
+}
+
+const buildQuery = (params: Record<string, string | number | undefined | null>): string => {
+  const entries = Object.entries(params)
+    .filter(([, v]) => v !== undefined && v !== null && String(v).length > 0)
+    .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`);
+  return entries.length ? `?${entries.join('&')}` : '';
+};
+
+export const adminApi = {
+  listRoles: () => apiRequest<RolesResponse>('/v2/admin/roles'),
+  listUsers: (params: { q?: string; limit?: number; offset?: number } = {}) => {
+    const qs = buildQuery({ q: params.q?.trim() || undefined, limit: params.limit ?? 50, offset: params.offset ?? 0 });
+    return apiRequest<ListUsersResponse>(`/v2/admin/users${qs}`);
+  },
+  setUserRole: (userId: string, role: string) =>
+    apiRequest<SetUserRoleResponse>(`/v2/admin/users/${encodeURIComponent(userId)}/role`, {
+      method: 'PATCH',
+      body: JSON.stringify({ role }),
+    }),
 };
