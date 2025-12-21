@@ -2,9 +2,9 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { authApi, setToken } from "@/lib/api";
+import { authApi, setToken, normalizeUsername } from "@/lib/api";
 import { toast } from "sonner";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2, Info } from "lucide-react";
 
 interface AuthFormProps {
   onSuccess: () => void;
@@ -18,21 +18,19 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // Show normalized username preview
+  const normalizedPreview = username ? normalizeUsername(username) : '';
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!username || !password) {
+    if (!username.trim() || !password) {
       toast.error('Заполните все поля');
       return;
     }
 
     if (mode === 'register' && password !== confirmPassword) {
       toast.error('Пароли не совпадают');
-      return;
-    }
-
-    if (password.length < 6) {
-      toast.error('Пароль должен быть не менее 6 символов');
       return;
     }
 
@@ -44,6 +42,13 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
         : await authApi.register(username, password);
       
       setToken(response.access_token);
+      
+      // Verify token works
+      const isValid = await authApi.verifyToken();
+      if (!isValid) {
+        throw new Error('Ошибка проверки токена');
+      }
+      
       toast.success(mode === 'login' ? 'Вход выполнен!' : 'Регистрация успешна!');
       onSuccess();
     } catch (error) {
@@ -74,11 +79,23 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
             </label>
             <Input
               type="text"
-              placeholder="Введите логин"
+              placeholder="username123"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               disabled={loading}
+              autoComplete="username"
             />
+            {username && normalizedPreview !== username.trim() && (
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                <Info className="h-3 w-3" />
+                Будет сохранён как: <span className="text-primary font-mono">{normalizedPreview}</span>
+              </p>
+            )}
+            {mode === 'register' && (
+              <p className="text-xs text-muted-foreground">
+                Латиница (a-z), цифры, точка, дефис, подчёркивание. 2-64 символа.
+              </p>
+            )}
           </div>
           
           <div className="space-y-2">
@@ -88,11 +105,12 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
             <div className="relative">
               <Input
                 type={showPassword ? 'text' : 'password'}
-                placeholder="Введите пароль"
+                placeholder="Минимум 6 символов"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={loading}
                 className="pr-10"
+                autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
               />
               <button
                 type="button"
@@ -115,6 +133,7 @@ export const AuthForm = ({ onSuccess }: AuthFormProps) => {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 disabled={loading}
+                autoComplete="new-password"
               />
             </div>
           )}
