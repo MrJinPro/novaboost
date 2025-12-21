@@ -115,7 +115,41 @@ export const mockPlans: Plan[] = [
 
 // Plan pricing (for UI display - actual prices from payment provider)
 export const planPricing: Record<string, { price: number; currency: string; period: string }> = {
-  nova_streamer_one_mobile: { price: 299, currency: '₽', period: '/месяц' },
-  nova_streamer_one_desktop: { price: 499, currency: '₽', period: '/месяц' },
-  nova_streamer_duo: { price: 699, currency: '₽', period: '/месяц' },
+  nova_streamer_one_mobile: { price: 4.99, currency: '$', period: '/месяц' },
+  nova_streamer_one_desktop: { price: 8.99, currency: '$', period: '/месяц' },
+  nova_streamer_duo: { price: 14.99, currency: '$', period: '/месяц' },
+};
+
+// Plan descriptions and features
+export const planDetails: Record<string, { description: string; features: string[]; available: boolean }> = {
+  nova_streamer_one_mobile: {
+    description: 'Идеально для мобильного стриминга',
+    features: [
+      'Озвучка чата',
+      'Озвучка подарков',
+      'Триггеры на события',
+      'Вход зрителя и т.д.',
+    ],
+    available: true,
+  },
+  nova_streamer_one_desktop: {
+    description: 'Полный набор для десктопа',
+    features: [
+      'Озвучка чата',
+      'Озвучка подарков',
+      'Триггеры на события',
+      'Виджеты и алёрты',
+    ],
+    available: false,
+  },
+  nova_streamer_duo: {
+    description: 'Максимум возможностей',
+    features: [
+      'Всё из Mobile + Desktop',
+      'NovaBoost Tools',
+      'Приоритетная поддержка',
+      'Ранний доступ к фичам',
+    ],
+    available: false,
+  },
 };

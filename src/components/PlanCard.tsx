@@ -1,7 +1,7 @@
-import { Plan, planPricing } from "@/lib/api";
+import { Plan, planPricing, planDetails } from "@/lib/api";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Check, Monitor, Smartphone } from "lucide-react";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Check, Monitor, Smartphone, Clock } from "lucide-react";
 
 interface PlanCardProps {
   plan: Plan;
@@ -11,29 +11,32 @@ interface PlanCardProps {
 }
 
 export const PlanCard = ({ plan, isPopular, onSelect, disabled }: PlanCardProps) => {
-  const pricing = planPricing[plan.id] || { price: 0, currency: '₽', period: '/месяц' };
+  const pricing = planPricing[plan.id] || { price: 0, currency: '$', period: '/месяц' };
+  const details = planDetails[plan.id] || { description: '', features: [], available: true };
   
   const platformIcons = {
     mobile: <Smartphone className="h-4 w-4" />,
     desktop: <Monitor className="h-4 w-4" />,
   };
 
-  const features = [
-    'Автоматический буст стримов',
-    'Аналитика в реальном времени',
-    'Поддержка 24/7',
-    plan.allowed_platforms.length > 1 ? 'Все платформы' : plan.allowed_platforms.includes('mobile') ? 'Мобильная версия' : 'Десктопная версия',
-  ];
+  const isAvailable = details.available;
 
   return (
     <Card 
-      className={`relative overflow-hidden transition-all duration-500 hover:scale-[1.02] hover:border-primary/50 ${
-        isPopular ? 'border-primary gold-glow' : ''
-      }`}
+      className={`relative overflow-hidden transition-all duration-500 hover:scale-[1.02] ${
+        isPopular ? 'border-primary gold-glow hover:border-primary' : 'hover:border-primary/50'
+      } ${!isAvailable ? 'opacity-75' : ''}`}
     >
       {isPopular && (
         <div className="absolute top-0 right-0 bg-gradient-to-r from-primary to-accent text-primary-foreground text-xs font-bold px-4 py-1.5 rounded-bl-xl">
-          Популярный
+          Максимум
+        </div>
+      )}
+      
+      {!isAvailable && (
+        <div className="absolute top-0 left-0 bg-muted text-muted-foreground text-xs font-medium px-3 py-1.5 rounded-br-xl flex items-center gap-1">
+          <Clock className="h-3 w-3" />
+          Скоро
         </div>
       )}
       
@@ -50,6 +53,7 @@ export const PlanCard = ({ plan, isPopular, onSelect, disabled }: PlanCardProps)
           ))}
         </div>
         <CardTitle className="text-xl">{plan.name}</CardTitle>
+        <CardDescription>{details.description}</CardDescription>
       </CardHeader>
       
       <CardContent className="space-y-6">
@@ -60,7 +64,7 @@ export const PlanCard = ({ plan, isPopular, onSelect, disabled }: PlanCardProps)
         </div>
         
         <ul className="space-y-3">
-          {features.map((feature, idx) => (
+          {details.features.map((feature, idx) => (
             <li key={idx} className="flex items-center gap-3 text-sm text-muted-foreground">
               <Check className="h-4 w-4 text-primary flex-shrink-0" />
               {feature}
@@ -71,12 +75,12 @@ export const PlanCard = ({ plan, isPopular, onSelect, disabled }: PlanCardProps)
       
       <CardFooter>
         <Button 
-          variant={isPopular ? "gold" : "outline"} 
+          variant={isAvailable ? (isPopular ? "gold" : "gold-outline") : "outline"} 
           className="w-full"
           onClick={() => onSelect(plan)}
-          disabled={disabled}
+          disabled={disabled || !isAvailable}
         >
-          Выбрать тариф
+          {isAvailable ? 'Выбрать тариф' : 'Скоро доступен'}
         </Button>
       </CardFooter>
     </Card>
