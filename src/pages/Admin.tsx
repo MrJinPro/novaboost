@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { adminApi, authApi, getToken } from "@/lib/api";
+import { adminApi, authApi, getToken, plansApi } from "@/lib/api";
 import { toast } from "sonner";
 import { Loader2, Shield, Users } from "lucide-react";
 
@@ -24,6 +24,7 @@ const Admin = () => {
 
   const [q, setQ] = useState("");
   const [offset, setOffset] = useState(0);
+  const [selectedPlanByUserId, setSelectedPlanByUserId] = useState<Record<string, string | null>>({});
 
   useEffect(() => {
     const token = getToken();
@@ -59,6 +60,13 @@ const Admin = () => {
     retry: false,
   });
 
+  const plansQuery = useQuery({
+    queryKey: ["plans"],
+    queryFn: plansApi.getPlans,
+    enabled: canEditRoles,
+    retry: false,
+  });
+
   const setRoleMutation = useMutation({
     mutationFn: (vars: { userId: string; role: string }) => adminApi.setUserRole(vars.userId, vars.role),
     onSuccess: async () => {
@@ -67,6 +75,40 @@ const Admin = () => {
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Не удалось изменить роль");
+    },
+  });
+
+  const setLicenseMutation = useMutation({
+    mutationFn: (vars: { userId: string; plan: string | null; ttlDays: number }) =>
+      adminApi.setUserLicense(vars.userId, vars.plan, vars.ttlDays),
+    onSuccess: async () => {
+      toast.success("Тариф/лицензия обновлены");
+      await queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+    },
+    onError: (err) => {
+      toast.error(err instanceof Error ? err.message : "Не удалось обновить тариф");
+    },
+  });
+
+  const extendLicenseMutation = useMutation({
+    mutationFn: (vars: { userId: string; extendDays: number }) => adminApi.extendUserLicense(vars.userId, vars.extendDays),
+    onSuccess: async () => {
+      toast.success("Лицензия продлена");
+      await queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+    },
+    onError: (err) => {
+      toast.error(err instanceof Error ? err.message : "Не удалось продлить лицензию");
+    },
+  });
+
+  const revokeLicenseMutation = useMutation({
+    mutationFn: (vars: { userId: string }) => adminApi.revokeUserLicense(vars.userId),
+    onSuccess: async () => {
+      toast.success("Лицензия отозвана");
+      await queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+    },
+    onError: (err) => {
+      toast.error(err instanceof Error ? err.message : "Не удалось отозвать лицензию");
     },
   });
 
@@ -129,6 +171,8 @@ const Admin = () => {
   const roles = rolesQuery.data?.items?.map((r) => r.id) || [];
   const users = usersQuery.data?.items || [];
   const total = usersQuery.data?.total ?? 0;
+
+  const paidPlans = plansQuery.data?.items || [];
 
   const hasPrev = offset > 0;
   const hasNext = offset + PAGE_SIZE < total;
@@ -193,12 +237,15 @@ const Admin = () => {
                         <TableHead>TikTok</TableHead>
                         <TableHead>Создан</TableHead>
                         <TableHead>Роль</TableHead>
+                            {canEditRoles && <TableHead>Тариф</TableHead>}
+                            {canEditRoles && <TableHead>Лицензия до</TableHead>}
+                            {canEditRoles && <TableHead>Действия</TableHead>}
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {users.length === 0 ? (
                         <TableRow>
-                          <TableCell colSpan={4} className="text-center text-muted-foreground py-10">
+                              <TableCell colSpan={canEditRoles ? 7 : 4} className="text-center text-muted-foreground py-10">
                             Ничего не найдено
                           </TableCell>
                         </TableRow>
@@ -241,6 +288,109 @@ const Admin = () => {
                                   <span className="text-sm">{u.role}</span>
                                 )}
                               </TableCell>
+
+                              {canEditRoles && (
+                                <TableCell>
+                                  <Select
+                                    value={
+                                      selectedPlanByUserId[u.id] !== undefined
+                                        ? (selectedPlanByUserId[u.id] ?? "__free__")
+                                        : paidPlans.some((p) => p.id === u.tariff_id)
+                                          ? (u.tariff_id as string)
+                                          : "__free__"
+                                    }
+                                    onValueChange={(value) =>
+                                      setSelectedPlanByUserId((prev) => ({
+                                        ...prev,
+                                        [u.id]: value === "__free__" ? null : value,
+                                      }))
+                                    }
+                                    disabled={
+                                      plansQuery.isLoading ||
+                                      plansQuery.isError ||
+                                      setLicenseMutation.isPending ||
+                                      extendLicenseMutation.isPending ||
+                                      revokeLicenseMutation.isPending
+                                    }
+                                  >
+                                    <SelectTrigger className="w-56">
+                                      <SelectValue placeholder="Тариф" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="__free__">free</SelectItem>
+                                      {paidPlans.map((p) => (
+                                        <SelectItem key={p.id} value={p.id}>
+                                          {p.id}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </TableCell>
+                              )}
+
+                              {canEditRoles && (
+                                <TableCell className="text-muted-foreground">
+                                  {u.license_expires_at
+                                    ? new Date(u.license_expires_at).toLocaleString("ru-RU", {
+                                        year: "numeric",
+                                        month: "2-digit",
+                                        day: "2-digit",
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                      })
+                                    : "—"}
+                                </TableCell>
+                              )}
+
+                              {canEditRoles && (
+                                <TableCell>
+                                  <div className="flex gap-2">
+                                    <Button
+                                      variant="outline"
+                                      onClick={() => {
+                                        const selected =
+                                          selectedPlanByUserId[u.id] !== undefined
+                                            ? selectedPlanByUserId[u.id]
+                                            : paidPlans.some((p) => p.id === u.tariff_id)
+                                              ? (u.tariff_id as string)
+                                              : null;
+                                        setLicenseMutation.mutate({ userId: u.id, plan: selected ?? null, ttlDays: 30 });
+                                      }}
+                                      disabled={
+                                        setLicenseMutation.isPending ||
+                                        extendLicenseMutation.isPending ||
+                                        revokeLicenseMutation.isPending
+                                      }
+                                    >
+                                      Применить 30д
+                                    </Button>
+                                    <Button
+                                      variant="outline"
+                                      onClick={() => extendLicenseMutation.mutate({ userId: u.id, extendDays: 30 })}
+                                      disabled={
+                                        !u.license_expires_at ||
+                                        setLicenseMutation.isPending ||
+                                        extendLicenseMutation.isPending ||
+                                        revokeLicenseMutation.isPending
+                                      }
+                                    >
+                                      +30д
+                                    </Button>
+                                    <Button
+                                      variant="outline"
+                                      onClick={() => revokeLicenseMutation.mutate({ userId: u.id })}
+                                      disabled={
+                                        !u.license_expires_at ||
+                                        setLicenseMutation.isPending ||
+                                        extendLicenseMutation.isPending ||
+                                        revokeLicenseMutation.isPending
+                                      }
+                                    >
+                                      Отозвать
+                                    </Button>
+                                  </div>
+                                </TableCell>
+                              )}
                             </TableRow>
                           );
                         })

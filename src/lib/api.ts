@@ -294,6 +294,9 @@ export interface AdminUserItem {
   role: string;
   created_at: string;
   tiktok_username?: string | null;
+  tariff_id?: string | null;
+  tariff_name?: string | null;
+  license_expires_at?: string | null;
 }
 
 export interface ListUsersResponse {
@@ -306,6 +309,27 @@ export interface SetUserRoleResponse {
   user_id: string;
   username: string;
   role: string;
+}
+
+export interface AdminSetUserLicenseResponse {
+  status: string;
+  user_id: string;
+  license_key: string;
+  plan: string | null;
+  expires_at: string | null;
+}
+
+export interface AdminExtendUserLicenseResponse {
+  status: string;
+  user_id: string;
+  license_key: string;
+  expires_at: string | null;
+}
+
+export interface AdminRevokeUserLicenseResponse {
+  status: string;
+  user_id: string;
+  license_key: string;
 }
 
 const buildQuery = (params: Record<string, string | number | undefined | null>): string => {
@@ -325,5 +349,20 @@ export const adminApi = {
     apiRequest<SetUserRoleResponse>(`/v2/admin/users/${encodeURIComponent(userId)}/role`, {
       method: 'PATCH',
       body: JSON.stringify({ role }),
+    }),
+  setUserLicense: (userId: string, plan: string | null, ttlDays: number = 30) =>
+    apiRequest<AdminSetUserLicenseResponse>(`/v2/admin/users/${encodeURIComponent(userId)}/license/set`, {
+      method: 'POST',
+      body: JSON.stringify({ plan, ttl_days: ttlDays }),
+    }),
+  extendUserLicense: (userId: string, extendDays: number = 30) =>
+    apiRequest<AdminExtendUserLicenseResponse>(`/v2/admin/users/${encodeURIComponent(userId)}/license/extend`, {
+      method: 'POST',
+      body: JSON.stringify({ extend_days: extendDays }),
+    }),
+  revokeUserLicense: (userId: string) =>
+    apiRequest<AdminRevokeUserLicenseResponse>(`/v2/admin/users/${encodeURIComponent(userId)}/license/revoke`, {
+      method: 'POST',
+      body: JSON.stringify({}),
     }),
 };
