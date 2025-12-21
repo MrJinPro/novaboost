@@ -1,7 +1,8 @@
 import { z } from 'zod';
 
 // Backend API configuration and services
-const BACKEND_BASE_URL = 'https://api.ttboost.pro';
+// If empty, requests go to the same origin (useful with reverse-proxy on the same domain).
+const BACKEND_BASE_URL = ((import.meta as any).env?.VITE_BACKEND_BASE_URL as string | undefined)?.replace(/\/+$/, '') || '';
 
 // Token management - use ttb_token as key
 export const getToken = (): string | null => {
