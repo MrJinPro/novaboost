@@ -13,6 +13,13 @@ build/
 .pytest_cache/
 .coverage
 
+# Frontend
+node_modules/
+.vite/
+
+# Prevent accidentally committing nested git repos
+novaboost/.git/
+
 # Backend has its own git repo
 backend/
 
@@ -36,3 +43,6 @@ Thumbs.db
 # Environment
 .env
 .env.local
+
+# Secrets (do not commit)
+секрет.txt
