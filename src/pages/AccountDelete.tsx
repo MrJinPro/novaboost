@@ -67,7 +67,7 @@ const AccountDelete = () => {
           <h2 className="mt-8 text-xl font-semibold">Как удалить аккаунт</h2>
           <ol className="mt-2 list-decimal pl-5 text-muted-foreground">
             <li>Откройте NovaBoost Mobile</li>
-            <li>Настройки → Аккаунт → Удалить аккаунт</li>
+            <li>Профиль → Аккаунт → Удалить аккаунт</li>
             <li>
               Подтвердите удаление (нужно ввести <span className="text-foreground">DELETE</span>)
             </li>
