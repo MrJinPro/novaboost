@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Header } from "@/components/Header";
+import { Footer } from "@/components/Footer";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,9 +27,9 @@ const Profile = () => {
       try {
         const userData = await authApi.getMe();
         setUser(userData);
-      } catch (error) {
+      } catch {
         toast.error('Не удалось загрузить профиль');
-        navigate('/auth');
+        setUser(null);
       } finally {
         setLoading(false);
       }
@@ -115,7 +116,7 @@ const Profile = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Shield className="h-5 w-5 text-primary" />
-                Текущий тариф
+                Лицензия
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -151,12 +152,9 @@ const Profile = () => {
                 </div>
               ) : (
                 <div className="text-center py-6">
-                  <p className="text-muted-foreground mb-4">
-                    У вас нет активного тарифа
+                  <p className="text-muted-foreground">
+                    У вас нет активной лицензии.
                   </p>
-                  <Button variant="gold" onClick={() => navigate('/')}>
-                    Выбрать тариф
-                  </Button>
                 </div>
               )}
             </CardContent>
@@ -202,6 +200,8 @@ const Profile = () => {
           </Card>
         </div>
       </main>
+
+      <Footer />
     </div>
   );
 };
