@@ -108,6 +108,19 @@ const Profile = () => {
                   </p>
                 </div>
               </div>
+
+              {user?.role && user.role.toLowerCase() !== 'user' && (
+                <div className="pt-2">
+                  <div className="flex flex-wrap gap-2">
+                    <Button variant="outline" onClick={() => navigate('/admin')}>
+                      Админка
+                    </Button>
+                    <Button variant="outline" onClick={() => navigate('/admin/notifications')}>
+                      Админ: уведомления
+                    </Button>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 

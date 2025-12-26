@@ -145,6 +145,31 @@ export interface UserProfile {
   license_expires_at: string | null;
 }
 
+export interface CreateNotificationRequest {
+  title: string;
+  body: string;
+  link?: string | null;
+  // Legacy
+  level?: 'info' | 'warning' | 'promo' | string;
+  audience?: 'all' | 'users' | 'plan' | 'missing_email' | string;
+  audience_value?: string | null;
+
+  // New unified
+  type?: 'system' | 'product' | 'marketing' | string;
+  severity?: 'info' | 'warning' | 'promo' | string;
+  in_app_enabled?: boolean;
+  push_enabled?: boolean;
+  targeting?: Record<string, any> | null;
+  starts_at?: string | null;
+  ends_at?: string | null;
+  target_usernames?: string[] | null;
+}
+
+export interface CreateNotificationResponse {
+  status: string;
+  id: string;
+}
+
 // Auth API with validation
 export const authApi = {
   register: async (username: string, password: string): Promise<AuthResponse> => {
@@ -359,6 +384,11 @@ const buildQuery = (params: Record<string, string | number | undefined | null>):
 
 export const adminApi = {
   listRoles: () => apiRequest<RolesResponse>('/v2/admin/roles'),
+  createNotification: (req: CreateNotificationRequest) =>
+    apiRequest<CreateNotificationResponse>('/v2/admin/notifications', {
+      method: 'POST',
+      body: JSON.stringify(req),
+    }),
   listUsers: (params: { q?: string; limit?: number; offset?: number } = {}) => {
     const qs = buildQuery({ q: params.q?.trim() || undefined, limit: params.limit ?? 50, offset: params.offset ?? 0 });
     return apiRequest<ListUsersResponse>(`/v2/admin/users${qs}`);
