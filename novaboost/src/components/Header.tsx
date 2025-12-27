@@ -4,6 +4,7 @@ import { getToken, removeToken } from "@/lib/api";
 import starLogo from "@/assets/star-logo.png";
 import { useEffect, useState } from "react";
 import { authApi } from "@/lib/api";
+import { Play } from "lucide-react";
 
 interface HeaderProps {
   isLoggedIn?: boolean;
@@ -57,6 +58,17 @@ export const Header = ({ isLoggedIn, onLogout }: HeaderProps) => {
         </Link>
 
         <nav className="flex items-center gap-4">
+          <Button asChild variant="outline" size="sm">
+            <a
+              href="https://play.google.com/apps/testing/com.mrjinpro.novaboostmobile"
+              target="_blank"
+              rel="noreferrer"
+              aria-label="Google Play (тестирование)"
+            >
+              <Play />
+              Google Play
+            </a>
+          </Button>
           {loggedIn ? (
             <>
               {isStaff && (
