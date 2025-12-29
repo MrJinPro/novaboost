@@ -19,6 +19,27 @@ const isStaffRole = (role?: string): boolean => {
   return r !== "user";
 };
 
+const fmtDateTimeRu = (iso?: string | null): string => {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleString("ru-RU", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
+const platformRu = (platform?: string | null): string => {
+  const p = String(platform || "").toLowerCase();
+  if (p === "android") return "Android";
+  if (p === "ios") return "iOS";
+  if (p === "desktop") return "Desktop";
+  return "—";
+};
+
 const Admin = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -36,6 +57,7 @@ const Admin = () => {
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [topPreset, setTopPreset] = useState<"off" | "today" | "7d" | "30d" | "all">("off");
   const [offset, setOffset] = useState(0);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [selectedPlanByUserId, setSelectedPlanByUserId] = useState<Record<string, string | null>>({});
 
   useEffect(() => {
@@ -244,10 +266,10 @@ const Admin = () => {
     });
   })();
 
-  const columnsCount = isSuperadmin ? 14 : 11;
-
   const hasPrev = offset > 0;
   const hasNext = offset + PAGE_SIZE < total;
+
+  const selectedUser = selectedUserId ? users.find((u) => u.id === selectedUserId) : null;
 
   return (
     <div className="min-h-screen">
@@ -303,478 +325,564 @@ const Admin = () => {
             <div className="text-sm text-destructive">Не удалось загрузить пользователей</div>
           ) : (
             <div className="space-y-3">
-                  <div className="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-                    <div>
-                      <Select
-                        value={activity || "__all__"}
-                        onValueChange={(v) => {
-                          setActivity(v === "__all__" ? "" : (v as any));
-                          setOffset(0);
-                        }}
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Активность" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="__all__">Активность: все</SelectItem>
-                          <SelectItem value="online">Только online</SelectItem>
-                          <SelectItem value="inactive">Только неактивные</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {activity === "inactive" && (
-                      <div>
-                        <Input
-                          type="number"
-                          min={1}
-                          value={String(inactiveDays)}
-                          onChange={(e) => {
-                            const n = Number(e.target.value);
-                            setInactiveDays(Number.isFinite(n) && n > 0 ? n : 30);
-                            setOffset(0);
-                          }}
-                          className="w-full"
-                          placeholder="Дней"
-                        />
-                      </div>
-                    )}
-
-                    <div>
-                      <Select
-                        value={platform || "__all__"}
-                        onValueChange={(v) => {
-                          setPlatform(v === "__all__" ? "" : (v as any));
-                          setOffset(0);
-                        }}
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Платформа" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="__all__">Платформа: все</SelectItem>
-                          <SelectItem value="android">Android</SelectItem>
-                          <SelectItem value="ios">iOS</SelectItem>
-                          <SelectItem value="desktop">Desktop</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div>
-                      <Input
-                        placeholder="Регион (например RU)"
-                        value={region}
-                        onChange={(e) => {
-                          setRegion(e.target.value);
-                          setOffset(0);
-                        }}
-                        className="w-full"
-                      />
-                    </div>
-
-                    <div>
-                      <Select
-                        value={hasDonations ? "donations" : "all"}
-                        onValueChange={(v) => {
-                          setHasDonations(v === "donations");
-                          setTopPreset("off");
-                          setOffset(0);
-                        }}
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Аналитика" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">Аналитика: все</SelectItem>
-                          <SelectItem value="donations">Только с донатами</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div>
-                      <Select
-                        value={topPreset}
-                        onValueChange={(v) => {
-                          const vv = (v as any) as "off" | "today" | "7d" | "30d" | "all";
-                          setTopPreset(vv);
-                          if (vv === "off") {
-                            setOffset(0);
-                            return;
-                          }
-
-                          setHasDonations(true);
-                          setSortDir("desc");
-                          if (vv === "today") setSortBy("today_coins");
-                          else if (vv === "7d") setSortBy("last_7d_coins");
-                          else if (vv === "30d") setSortBy("last_30d_coins");
-                          else setSortBy("total_coins");
-                          setOffset(0);
-                        }}
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Топ" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="off">Топ: выкл</SelectItem>
-                          <SelectItem value="today">Топ: сегодня</SelectItem>
-                          <SelectItem value="7d">Топ: 7 дней</SelectItem>
-                          <SelectItem value="30d">Топ: 30 дней</SelectItem>
-                          <SelectItem value="all">Топ: всё время</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="lg:col-span-2 xl:col-span-2">
-                      <Select
-                        value={`${sortBy}:${sortDir}`}
-                        onValueChange={(v) => {
-                          const [sb, sd] = String(v).split(":");
-                          setSortBy((sb as any) || "created_at");
-                          setSortDir(sd === "asc" ? "asc" : "desc");
-                          setTopPreset("off");
-                          setOffset(0);
-                        }}
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Сортировка" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="created_at:desc">Новые (создан)</SelectItem>
-                          <SelectItem value="last_login_at:desc">Последний логин</SelectItem>
-                          <SelectItem value="total_coins:desc">Coins: всего</SelectItem>
-                          <SelectItem value="today_coins:desc">Coins: сегодня</SelectItem>
-                          <SelectItem value="last_7d_coins:desc">Coins: 7 дней</SelectItem>
-                          <SelectItem value="last_30d_coins:desc">Coins: 30 дней</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {isSuperadmin && (
-                      <div className="lg:col-span-2 xl:col-span-2">
-                        <Select
-                          value={tariffId || "__all__"}
-                          onValueChange={(v) => {
-                            setTariffId(v === "__all__" ? "" : v);
-                            setOffset(0);
-                          }}
-                          disabled={plansQuery.isLoading || plansQuery.isError}
-                        >
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Тариф" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {tariffFilterOptions.map((t) => (
-                              <SelectItem key={t.id} value={t.id}>
-                                {t.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="rounded-xl border border-border/50 bg-card overflow-x-auto">
-                  <Table className="w-full table-auto">
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-56 h-auto py-3 align-top whitespace-normal leading-tight">Пользователь</TableHead>
-                        <TableHead className="h-auto py-3 align-top whitespace-nowrap">Online</TableHead>
-                        <TableHead className="w-64 h-auto py-3 align-top whitespace-normal leading-tight">Устройство</TableHead>
-                        <TableHead className="h-auto py-3 align-top whitespace-nowrap">Регион</TableHead>
-                        <TableHead className="h-auto py-3 align-top whitespace-nowrap">Последний логин</TableHead>
-                        <TableHead className="h-auto py-3 align-top whitespace-nowrap">TikTok</TableHead>
-                        <TableHead className="h-auto py-3 align-top whitespace-nowrap">Последний LIVE</TableHead>
-                        <TableHead className="w-36 h-auto py-3 align-top whitespace-normal leading-tight">Подарки</TableHead>
-                        <TableHead className="w-56 h-auto py-3 align-top whitespace-normal leading-tight">Топ доноры</TableHead>
-                        <TableHead className="h-auto py-3 align-top whitespace-nowrap">Роль</TableHead>
-                        <TableHead className="h-auto py-3 align-top whitespace-nowrap">Статус</TableHead>
-                        {isSuperadmin && <TableHead className="h-auto py-3 align-top whitespace-nowrap">Тариф</TableHead>}
-                        {isSuperadmin && <TableHead className="h-auto py-3 align-top whitespace-nowrap">Лицензия до</TableHead>}
-                        {isSuperadmin && <TableHead className="h-auto py-3 align-top whitespace-nowrap">Действия</TableHead>}
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {users.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={columnsCount} className="text-center text-muted-foreground py-10">
-                            Ничего не найдено
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        users.map((u) => {
-
-                          const lastLogin = u.last_login_at
-                            ? new Date(u.last_login_at).toLocaleString("ru-RU", {
-                                year: "numeric",
-                                month: "2-digit",
-                                day: "2-digit",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })
-                            : "";
-
-                          const lastLive = u.last_live_at
-                            ? new Date(u.last_live_at).toLocaleString("ru-RU", {
-                                year: "numeric",
-                                month: "2-digit",
-                                day: "2-digit",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })
-                            : "";
-
-                          const status = u.is_banned
-                            ? "blocked"
-                            : (u.status || "active");
-
-                          const deviceLine = [u.client_os || u.platform, u.device]
-                            .filter((x) => !!(x && String(x).trim()))
-                            .join(" • ");
-
-                          const giftsLine = `${u.total_gifts ?? 0} / ${u.total_coins ?? 0}`;
-
-                          const topDonorsAll = (u.top_donors_all || u.top_donors || [])
-                            .map((d: any) => `${d.username} (${d.coins ?? d.total_coins ?? 0})`)
-                            .join(", ");
-                          const topDonorsToday = (u.top_donors_today || [])
-                            .map((d) => `${d.username} (${d.coins ?? 0})`)
-                            .join(", ");
-                          const topDonors7d = (u.top_donors_7d || [])
-                            .map((d) => `${d.username} (${d.coins ?? 0})`)
-                            .join(", ");
-                          const topDonors30d = (u.top_donors_30d || [])
-                            .map((d) => `${d.username} (${d.coins ?? 0})`)
-                            .join(", ");
-
-                          const topGiftsAll = (u.top_gifts_all || [])
-                            .map((g) => `${g.name} (${g.coins ?? 0})`)
-                            .join(", ");
-                          const topGiftsToday = (u.top_gifts_today || [])
-                            .map((g) => `${g.name} (${g.coins ?? 0})`)
-                            .join(", ");
-                          const topGifts7d = (u.top_gifts_7d || [])
-                            .map((g) => `${g.name} (${g.coins ?? 0})`)
-                            .join(", ");
-                          const topGifts30d = (u.top_gifts_30d || [])
-                            .map((g) => `${g.name} (${g.coins ?? 0})`)
-                            .join(", ");
-
-                          return (
-                            <TableRow key={u.id}>
-                              <TableCell className="font-medium align-top whitespace-normal break-words">
-                                <div>{u.username}</div>
-                                <div className="text-xs text-muted-foreground break-words">{u.email || "—"}</div>
-                              </TableCell>
-                              <TableCell className="align-top">
-                                {u.online_now ? (
-                                  <span className="text-sm">online</span>
-                                ) : (
-                                  <span className="text-sm text-muted-foreground">offline</span>
-                                )}
-                              </TableCell>
-                              <TableCell className="align-top text-muted-foreground whitespace-normal break-words text-xs leading-snug">
-                                {deviceLine || "—"}
-                              </TableCell>
-                              <TableCell className="align-top text-muted-foreground whitespace-nowrap">{u.region || "—"}</TableCell>
-                              <TableCell className="align-top text-muted-foreground whitespace-nowrap">{lastLogin || "—"}</TableCell>
-                              <TableCell className="align-top text-muted-foreground whitespace-nowrap">{u.tiktok_username || "—"}</TableCell>
-                              <TableCell className="align-top text-muted-foreground whitespace-nowrap">{lastLive || "—"}</TableCell>
-                              <TableCell className="align-top text-muted-foreground whitespace-normal break-words">
-                                <div className="text-sm">{giftsLine}</div>
-                                <div className="text-xs">today {u.today_coins ?? 0} • 7d {u.last_7d_coins ?? 0} • 30d {u.last_30d_coins ?? 0}</div>
-                                <div className="text-[11px] text-muted-foreground mt-1">gift top all: {topGiftsAll || "—"}</div>
-                                <div className="text-[11px] text-muted-foreground">gift top today: {topGiftsToday || "—"}</div>
-                                <div className="text-[11px] text-muted-foreground">gift top 7d: {topGifts7d || "—"}</div>
-                                <div className="text-[11px] text-muted-foreground">gift top 30d: {topGifts30d || "—"}</div>
-                              </TableCell>
-                              <TableCell className="align-top text-muted-foreground whitespace-normal break-words text-xs leading-snug">
-                                <div className="text-[11px]">all: {topDonorsAll || "—"}</div>
-                                <div className="text-[11px]">today: {topDonorsToday || "—"}</div>
-                                <div className="text-[11px]">7d: {topDonors7d || "—"}</div>
-                                <div className="text-[11px]">30d: {topDonors30d || "—"}</div>
-                              </TableCell>
-                              <TableCell className="align-top">
-                                {isSuperadmin ? (
-                                  <Select
-                                    value={u.role}
-                                    onValueChange={(value) => setRoleMutation.mutate({ userId: u.id, role: value })}
-                                    disabled={setRoleMutation.isPending || rolesQuery.isLoading || rolesQuery.isError}
-                                  >
-                                    <SelectTrigger className="w-full min-w-36">
-                                      <SelectValue placeholder="Выберите роль" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      {roles.map((r) => (
-                                        <SelectItem key={r} value={r}>
-                                          {r}
-                                        </SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
-                                ) : (
-                                  <span className="text-sm">{u.role}</span>
-                                )}
-                              </TableCell>
-
-                              <TableCell className="align-top">
-                                {status === "blocked" ? (
-                                  <span className="text-sm text-destructive">blocked</span>
-                                ) : status === "expired" ? (
-                                  <span className="text-sm text-muted-foreground">expired</span>
-                                ) : (
-                                  <span className="text-sm text-muted-foreground">active</span>
-                                )}
-                              </TableCell>
-
-                              {isSuperadmin && (
-                                <TableCell className="align-top">
-                                  <Select
-                                    value={
-                                      selectedPlanByUserId[u.id] !== undefined
-                                        ? selectedPlanByUserId[u.id] ?? "__free__"
-                                        : paidPlans.some((p) => p.id === u.tariff_id)
-                                          ? (u.tariff_id as string)
-                                          : "__free__"
-                                    }
-                                    onValueChange={(value) =>
-                                      setSelectedPlanByUserId((prev) => ({
-                                        ...prev,
-                                        [u.id]: value === "__free__" ? null : value,
-                                      }))
-                                    }
-                                    disabled={
-                                      plansQuery.isLoading ||
-                                      plansQuery.isError ||
-                                      setLicenseMutation.isPending ||
-                                      extendLicenseMutation.isPending ||
-                                      revokeLicenseMutation.isPending
-                                    }
-                                  >
-                                    <SelectTrigger className="w-full min-w-44">
-                                      <SelectValue placeholder="Тариф" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="__free__">free</SelectItem>
-                                      {paidPlans.map((p) => (
-                                        <SelectItem key={p.id} value={p.id}>
-                                          {p.id}
-                                        </SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
-                                </TableCell>
-                              )}
-
-                              {isSuperadmin && (
-                                <TableCell className="text-muted-foreground">
-                                  {u.license_expires_at
-                                    ? new Date(u.license_expires_at).toLocaleString("ru-RU", {
-                                        year: "numeric",
-                                        month: "2-digit",
-                                        day: "2-digit",
-                                        hour: "2-digit",
-                                        minute: "2-digit",
-                                      })
-                                    : "—"}
-                                </TableCell>
-                              )}
-
-                              {isSuperadmin && (
-                                <TableCell className="align-top">
-                                  <div className="flex flex-col gap-2 w-40">
-                                    <Button
-                                      variant="outline"
-                                      className="w-full"
-                                      onClick={() => {
-                                        const selected =
-                                          selectedPlanByUserId[u.id] !== undefined
-                                            ? selectedPlanByUserId[u.id]
-                                            : paidPlans.some((p) => p.id === u.tariff_id)
-                                              ? (u.tariff_id as string)
-                                              : null;
-                                        setLicenseMutation.mutate({ userId: u.id, plan: selected ?? null, ttlDays: 30 });
-                                      }}
-                                      disabled={
-                                        setLicenseMutation.isPending ||
-                                        extendLicenseMutation.isPending ||
-                                        revokeLicenseMutation.isPending
-                                      }
-                                    >
-                                      Применить 30д
-                                    </Button>
-                                    <Button
-                                      variant="outline"
-                                      className="w-full"
-                                      onClick={() => extendLicenseMutation.mutate({ userId: u.id, extendDays: 30 })}
-                                      disabled={
-                                        !u.license_expires_at ||
-                                        setLicenseMutation.isPending ||
-                                        extendLicenseMutation.isPending ||
-                                        revokeLicenseMutation.isPending
-                                      }
-                                    >
-                                      +30д
-                                    </Button>
-                                    <Button
-                                      variant="outline"
-                                      className="w-full"
-                                      onClick={() => revokeLicenseMutation.mutate({ userId: u.id })}
-                                      disabled={
-                                        !u.license_expires_at ||
-                                        setLicenseMutation.isPending ||
-                                        extendLicenseMutation.isPending ||
-                                        revokeLicenseMutation.isPending ||
-                                        setBanMutation.isPending ||
-                                        deleteUserMutation.isPending
-                                      }
-                                    >
-                                      Отозвать
-                                    </Button>
-
-                                    <Button
-                                      variant="outline"
-                                      className="w-full"
-                                      onClick={() => setBanMutation.mutate({ userId: u.id, banned: !u.is_banned })}
-                                      disabled={
-                                        setLicenseMutation.isPending ||
-                                        extendLicenseMutation.isPending ||
-                                        revokeLicenseMutation.isPending ||
-                                        setBanMutation.isPending ||
-                                        deleteUserMutation.isPending
-                                      }
-                                    >
-                                      {u.is_banned ? "Разбан" : "Бан"}
-                                    </Button>
-
-                                    <Button
-                                      variant="outline"
-                                      className="w-full"
-                                      onClick={() => {
-                                        if (confirm(`Удалить пользователя ${u.username}? Это необратимо.`)) {
-                                          deleteUserMutation.mutate({ userId: u.id });
-                                        }
-                                      }}
-                                      disabled={
-                                        setLicenseMutation.isPending ||
-                                        extendLicenseMutation.isPending ||
-                                        revokeLicenseMutation.isPending ||
-                                        setBanMutation.isPending ||
-                                        deleteUserMutation.isPending
-                                      }
-                                    >
-                                      Удалить
-                                    </Button>
-                                  </div>
-                                </TableCell>
-                              )}
-                            </TableRow>
-                          );
-                        })
-                      )}
-                    </TableBody>
-                  </Table>
+              <div className="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+                <div>
+                  <Select
+                    value={activity || "__all__"}
+                    onValueChange={(v) => {
+                      setActivity(v === "__all__" ? "" : (v as any));
+                      setOffset(0);
+                    }}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Активность" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__all__">Активность: все</SelectItem>
+                      <SelectItem value="online">Только online</SelectItem>
+                      <SelectItem value="inactive">Только неактивные</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
+
+                {activity === "inactive" && (
+                  <div>
+                    <Input
+                      type="number"
+                      min={1}
+                      value={String(inactiveDays)}
+                      onChange={(e) => {
+                        const n = Number(e.target.value);
+                        setInactiveDays(Number.isFinite(n) && n > 0 ? n : 30);
+                        setOffset(0);
+                      }}
+                      className="w-full"
+                      placeholder="Дней"
+                    />
+                  </div>
+                )}
+
+                <div>
+                  <Select
+                    value={platform || "__all__"}
+                    onValueChange={(v) => {
+                      setPlatform(v === "__all__" ? "" : (v as any));
+                      setOffset(0);
+                    }}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Платформа" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__all__">Платформа: все</SelectItem>
+                      <SelectItem value="android">Android</SelectItem>
+                      <SelectItem value="ios">iOS</SelectItem>
+                      <SelectItem value="desktop">Desktop</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Input
+                    placeholder="Регион (например RU)"
+                    value={region}
+                    onChange={(e) => {
+                      setRegion(e.target.value);
+                      setOffset(0);
+                    }}
+                    className="w-full"
+                  />
+                </div>
+
+                <div>
+                  <Select
+                    value={hasDonations ? "donations" : "all"}
+                    onValueChange={(v) => {
+                      setHasDonations(v === "donations");
+                      setTopPreset("off");
+                      setOffset(0);
+                    }}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Аналитика" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Аналитика: все</SelectItem>
+                      <SelectItem value="donations">Только с донатами</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Select
+                    value={topPreset}
+                    onValueChange={(v) => {
+                      const vv = (v as any) as "off" | "today" | "7d" | "30d" | "all";
+                      setTopPreset(vv);
+                      if (vv === "off") {
+                        setOffset(0);
+                        return;
+                      }
+
+                      setHasDonations(true);
+                      setSortDir("desc");
+                      if (vv === "today") setSortBy("today_coins");
+                      else if (vv === "7d") setSortBy("last_7d_coins");
+                      else if (vv === "30d") setSortBy("last_30d_coins");
+                      else setSortBy("total_coins");
+                      setOffset(0);
+                    }}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Топ" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="off">Топ: выкл</SelectItem>
+                      <SelectItem value="today">Топ: сегодня</SelectItem>
+                      <SelectItem value="7d">Топ: 7 дней</SelectItem>
+                      <SelectItem value="30d">Топ: 30 дней</SelectItem>
+                      <SelectItem value="all">Топ: всё время</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="lg:col-span-2 xl:col-span-2">
+                  <Select
+                    value={`${sortBy}:${sortDir}`}
+                    onValueChange={(v) => {
+                      const [sb, sd] = String(v).split(":");
+                      setSortBy((sb as any) || "created_at");
+                      setSortDir(sd === "asc" ? "asc" : "desc");
+                      setTopPreset("off");
+                      setOffset(0);
+                    }}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Сортировка" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="created_at:desc">Новые (создан)</SelectItem>
+                      <SelectItem value="last_login_at:desc">Последний логин</SelectItem>
+                      <SelectItem value="total_coins:desc">Coins: всего</SelectItem>
+                      <SelectItem value="today_coins:desc">Coins: сегодня</SelectItem>
+                      <SelectItem value="last_7d_coins:desc">Coins: 7 дней</SelectItem>
+                      <SelectItem value="last_30d_coins:desc">Coins: 30 дней</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {isSuperadmin && (
+                  <div className="lg:col-span-2 xl:col-span-2">
+                    <Select
+                      value={tariffId || "__all__"}
+                      onValueChange={(v) => {
+                        setTariffId(v === "__all__" ? "" : v);
+                        setOffset(0);
+                      }}
+                      disabled={plansQuery.isLoading || plansQuery.isError}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Тариф" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {tariffFilterOptions.map((t) => (
+                          <SelectItem key={t.id} value={t.id}>
+                            {t.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </div>
+
+              <div className="rounded-xl border border-border/50 bg-card">
+                        <Table className="w-full table-auto">
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead className="h-auto py-3 align-top whitespace-nowrap">Пользователь</TableHead>
+                              <TableHead className="h-auto py-3 align-top whitespace-nowrap">Онлайн</TableHead>
+                              <TableHead className="h-auto py-3 align-top whitespace-nowrap">Статус</TableHead>
+                              <TableHead className="h-auto py-3 align-top whitespace-nowrap">Платформа</TableHead>
+                              <TableHead className="h-auto py-3 align-top whitespace-nowrap">Регион</TableHead>
+                              <TableHead className="h-auto py-3 align-top whitespace-nowrap">Последний логин</TableHead>
+                              <TableHead className="h-auto py-3 align-top whitespace-nowrap">TikTok</TableHead>
+                              <TableHead className="h-auto py-3 align-top whitespace-nowrap">Coins</TableHead>
+                              <TableHead className="h-auto py-3 align-top whitespace-nowrap">Детали</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {users.length === 0 ? (
+                              <TableRow>
+                                <TableCell colSpan={9} className="text-center text-muted-foreground py-10">
+                                  Ничего не найдено
+                                </TableCell>
+                              </TableRow>
+                            ) : (
+                              users.map((u) => {
+                                const statusText = u.is_banned ? "Заблокирован" : (u.status === "expired" ? "Истёк" : "Активен");
+                                const statusClass = u.is_banned
+                                  ? "text-destructive"
+                                  : (u.status === "expired" ? "text-muted-foreground" : "text-muted-foreground");
+
+                                return (
+                                  <TableRow key={u.id}>
+                                    <TableCell className="align-top">
+                                      <div className="font-medium break-words">{u.username}</div>
+                                      <div className="text-xs text-muted-foreground break-words">{u.email || "—"}</div>
+                                    </TableCell>
+                                    <TableCell className="align-top whitespace-nowrap">
+                                      {u.online_now ? (
+                                        <span className="text-sm">Онлайн</span>
+                                      ) : (
+                                        <span className="text-sm text-muted-foreground">Оффлайн</span>
+                                      )}
+                                    </TableCell>
+                                    <TableCell className="align-top whitespace-nowrap">
+                                      <span className={`text-sm ${statusClass}`}>{statusText}</span>
+                                    </TableCell>
+                                    <TableCell className="align-top whitespace-nowrap text-muted-foreground">
+                                      {platformRu((u as any).platform)}
+                                    </TableCell>
+                                    <TableCell className="align-top whitespace-nowrap text-muted-foreground">{u.region || "—"}</TableCell>
+                                    <TableCell className="align-top whitespace-nowrap text-muted-foreground">
+                                      {fmtDateTimeRu((u as any).last_login_at)}
+                                    </TableCell>
+                                    <TableCell className="align-top whitespace-nowrap text-muted-foreground">
+                                      {(u as any).tiktok_username || "—"}
+                                    </TableCell>
+                                    <TableCell className="align-top">
+                                      <div className="text-sm text-muted-foreground whitespace-nowrap">Всего: {u.total_coins ?? 0}</div>
+                                      <div className="text-xs text-muted-foreground whitespace-nowrap">
+                                        Сегодня: {u.today_coins ?? 0} • 7д: {u.last_7d_coins ?? 0} • 30д: {u.last_30d_coins ?? 0}
+                                      </div>
+                                    </TableCell>
+                                    <TableCell className="align-top">
+                                      <Button
+                                        variant={selectedUserId === u.id ? "outline" : "gold"}
+                                        onClick={() => setSelectedUserId((prev) => (prev === u.id ? null : u.id))}
+                                      >
+                                        {selectedUserId === u.id ? "Скрыть" : "Открыть"}
+                                      </Button>
+                                    </TableCell>
+                                  </TableRow>
+                                );
+                              })
+                            )}
+                          </TableBody>
+                        </Table>
+                      </div>
+
+                      {selectedUser && (
+                        <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+                          <Card>
+                            <CardHeader>
+                              <CardTitle>Профиль</CardTitle>
+                              <CardDescription>Данные выбранного пользователя</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                              <Table>
+                                <TableBody>
+                                  <TableRow>
+                                    <TableCell className="text-muted-foreground">Логин</TableCell>
+                                    <TableCell className="font-medium break-words">{selectedUser.username}</TableCell>
+                                  </TableRow>
+                                  <TableRow>
+                                    <TableCell className="text-muted-foreground">Email</TableCell>
+                                    <TableCell className="break-words">{selectedUser.email || "—"}</TableCell>
+                                  </TableRow>
+                                  <TableRow>
+                                    <TableCell className="text-muted-foreground">TikTok</TableCell>
+                                    <TableCell>{(selectedUser as any).tiktok_username || "—"}</TableCell>
+                                  </TableRow>
+                                  <TableRow>
+                                    <TableCell className="text-muted-foreground">Последний логин</TableCell>
+                                    <TableCell>{fmtDateTimeRu((selectedUser as any).last_login_at)}</TableCell>
+                                  </TableRow>
+                                  <TableRow>
+                                    <TableCell className="text-muted-foreground">Последний LIVE</TableCell>
+                                    <TableCell>{fmtDateTimeRu((selectedUser as any).last_live_at)}</TableCell>
+                                  </TableRow>
+                                  <TableRow>
+                                    <TableCell className="text-muted-foreground">Регион</TableCell>
+                                    <TableCell>{selectedUser.region || "—"}</TableCell>
+                                  </TableRow>
+                                  <TableRow>
+                                    <TableCell className="text-muted-foreground">Платформа</TableCell>
+                                    <TableCell>{platformRu((selectedUser as any).platform)}</TableCell>
+                                  </TableRow>
+                                  <TableRow>
+                                    <TableCell className="text-muted-foreground">Устройство</TableCell>
+                                    <TableCell className="text-sm text-muted-foreground break-words">
+                                      {[selectedUser.client_os || (selectedUser as any).platform, (selectedUser as any).device]
+                                        .filter((x) => !!(x && String(x).trim()))
+                                        .join(" • ") || "—"}
+                                    </TableCell>
+                                  </TableRow>
+
+                                  <TableRow>
+                                    <TableCell className="text-muted-foreground">Роль</TableCell>
+                                    <TableCell>
+                                      {isSuperadmin ? (
+                                        <Select
+                                          value={selectedUser.role}
+                                          onValueChange={(value) => setRoleMutation.mutate({ userId: selectedUser.id, role: value })}
+                                          disabled={setRoleMutation.isPending || rolesQuery.isLoading || rolesQuery.isError}
+                                        >
+                                          <SelectTrigger className="w-full">
+                                            <SelectValue placeholder="Выберите роль" />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            {roles.map((r) => (
+                                              <SelectItem key={r} value={r}>
+                                                {r}
+                                              </SelectItem>
+                                            ))}
+                                          </SelectContent>
+                                        </Select>
+                                      ) : (
+                                        <span className="text-sm">{selectedUser.role}</span>
+                                      )}
+                                    </TableCell>
+                                  </TableRow>
+
+                                  {isSuperadmin && (
+                                    <TableRow>
+                                      <TableCell className="text-muted-foreground">Тариф</TableCell>
+                                      <TableCell>
+                                        <Select
+                                          value={
+                                            selectedPlanByUserId[selectedUser.id] !== undefined
+                                              ? selectedPlanByUserId[selectedUser.id] ?? "__free__"
+                                              : paidPlans.some((p) => p.id === selectedUser.tariff_id)
+                                                ? (selectedUser.tariff_id as string)
+                                                : "__free__"
+                                          }
+                                          onValueChange={(value) =>
+                                            setSelectedPlanByUserId((prev) => ({
+                                              ...prev,
+                                              [selectedUser.id]: value === "__free__" ? null : value,
+                                            }))
+                                          }
+                                          disabled={
+                                            plansQuery.isLoading ||
+                                            plansQuery.isError ||
+                                            setLicenseMutation.isPending ||
+                                            extendLicenseMutation.isPending ||
+                                            revokeLicenseMutation.isPending
+                                          }
+                                        >
+                                          <SelectTrigger className="w-full">
+                                            <SelectValue placeholder="Тариф" />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            <SelectItem value="__free__">free</SelectItem>
+                                            {paidPlans.map((p) => (
+                                              <SelectItem key={p.id} value={p.id}>
+                                                {p.id}
+                                              </SelectItem>
+                                            ))}
+                                          </SelectContent>
+                                        </Select>
+                                      </TableCell>
+                                    </TableRow>
+                                  )}
+
+                                  {isSuperadmin && (
+                                    <TableRow>
+                                      <TableCell className="text-muted-foreground">Лицензия до</TableCell>
+                                      <TableCell>{fmtDateTimeRu((selectedUser as any).license_expires_at)}</TableCell>
+                                    </TableRow>
+                                  )}
+                                </TableBody>
+                              </Table>
+                            </CardContent>
+                          </Card>
+
+                          <Card>
+                            <CardHeader>
+                              <CardTitle>Статистика</CardTitle>
+                              <CardDescription>Подарки и coins</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                              <Table>
+                                <TableBody>
+                                  <TableRow>
+                                    <TableCell className="text-muted-foreground">Подарков (всего)</TableCell>
+                                    <TableCell className="font-medium">{selectedUser.total_gifts ?? 0}</TableCell>
+                                  </TableRow>
+                                  <TableRow>
+                                    <TableCell className="text-muted-foreground">Coins (всего)</TableCell>
+                                    <TableCell className="font-medium">{selectedUser.total_coins ?? 0}</TableCell>
+                                  </TableRow>
+                                  <TableRow>
+                                    <TableCell className="text-muted-foreground">Coins (сегодня)</TableCell>
+                                    <TableCell>{selectedUser.today_coins ?? 0}</TableCell>
+                                  </TableRow>
+                                  <TableRow>
+                                    <TableCell className="text-muted-foreground">Coins (7 дней)</TableCell>
+                                    <TableCell>{selectedUser.last_7d_coins ?? 0}</TableCell>
+                                  </TableRow>
+                                  <TableRow>
+                                    <TableCell className="text-muted-foreground">Coins (30 дней)</TableCell>
+                                    <TableCell>{selectedUser.last_30d_coins ?? 0}</TableCell>
+                                  </TableRow>
+                                </TableBody>
+                              </Table>
+                            </CardContent>
+                          </Card>
+
+                          <Card>
+                            <CardHeader>
+                              <CardTitle>Топ доноры</CardTitle>
+                              <CardDescription>Топ‑3 по периодам</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                              <Table>
+                                <TableBody>
+                                  {(
+                                    [
+                                      { label: "Сегодня", items: (selectedUser as any).top_donors_today || [] },
+                                      { label: "7 дней", items: (selectedUser as any).top_donors_7d || [] },
+                                      { label: "30 дней", items: (selectedUser as any).top_donors_30d || [] },
+                                      { label: "Всё время", items: (selectedUser as any).top_donors_all || (selectedUser as any).top_donors || [] },
+                                    ] as Array<{ label: string; items: any[] }>
+                                  ).map((row) => (
+                                    <TableRow key={row.label}>
+                                      <TableCell className="text-muted-foreground whitespace-nowrap">{row.label}</TableCell>
+                                      <TableCell className="text-sm text-muted-foreground break-words">
+                                        {row.items.length
+                                          ? row.items.map((d) => `${d.username} (${d.coins ?? d.total_coins ?? 0})`).join(", ")
+                                          : "—"}
+                                      </TableCell>
+                                    </TableRow>
+                                  ))}
+                                </TableBody>
+                              </Table>
+                            </CardContent>
+                          </Card>
+
+                          <Card>
+                            <CardHeader>
+                              <CardTitle>Топ подарки</CardTitle>
+                              <CardDescription>Топ‑3 по периодам</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                              <Table>
+                                <TableBody>
+                                  {(
+                                    [
+                                      { label: "Сегодня", items: (selectedUser as any).top_gifts_today || [] },
+                                      { label: "7 дней", items: (selectedUser as any).top_gifts_7d || [] },
+                                      { label: "30 дней", items: (selectedUser as any).top_gifts_30d || [] },
+                                      { label: "Всё время", items: (selectedUser as any).top_gifts_all || [] },
+                                    ] as Array<{ label: string; items: any[] }>
+                                  ).map((row) => (
+                                    <TableRow key={row.label}>
+                                      <TableCell className="text-muted-foreground whitespace-nowrap">{row.label}</TableCell>
+                                      <TableCell className="text-sm text-muted-foreground break-words">
+                                        {row.items.length ? row.items.map((g) => `${g.name} (${g.coins ?? 0})`).join(", ") : "—"}
+                                      </TableCell>
+                                    </TableRow>
+                                  ))}
+                                </TableBody>
+                              </Table>
+                            </CardContent>
+                          </Card>
+
+                          {isSuperadmin && (
+                            <Card>
+                              <CardHeader>
+                                <CardTitle>Действия</CardTitle>
+                                <CardDescription>Управление лицензией и баном</CardDescription>
+                              </CardHeader>
+                              <CardContent className="space-y-2">
+                                <Button
+                                  variant="outline"
+                                  className="w-full"
+                                  onClick={() => {
+                                    const selected =
+                                      selectedPlanByUserId[selectedUser.id] !== undefined
+                                        ? selectedPlanByUserId[selectedUser.id]
+                                        : paidPlans.some((p) => p.id === selectedUser.tariff_id)
+                                          ? (selectedUser.tariff_id as string)
+                                          : null;
+                                    setLicenseMutation.mutate({ userId: selectedUser.id, plan: selected ?? null, ttlDays: 30 });
+                                  }}
+                                  disabled={
+                                    setLicenseMutation.isPending ||
+                                    extendLicenseMutation.isPending ||
+                                    revokeLicenseMutation.isPending
+                                  }
+                                >
+                                  Применить 30 дней
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  className="w-full"
+                                  onClick={() => extendLicenseMutation.mutate({ userId: selectedUser.id, extendDays: 30 })}
+                                  disabled={
+                                    !(selectedUser as any).license_expires_at ||
+                                    setLicenseMutation.isPending ||
+                                    extendLicenseMutation.isPending ||
+                                    revokeLicenseMutation.isPending
+                                  }
+                                >
+                                  Продлить +30 дней
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  className="w-full"
+                                  onClick={() => revokeLicenseMutation.mutate({ userId: selectedUser.id })}
+                                  disabled={
+                                    !(selectedUser as any).license_expires_at ||
+                                    setLicenseMutation.isPending ||
+                                    extendLicenseMutation.isPending ||
+                                    revokeLicenseMutation.isPending ||
+                                    setBanMutation.isPending ||
+                                    deleteUserMutation.isPending
+                                  }
+                                >
+                                  Отозвать лицензию
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  className="w-full"
+                                  onClick={() => setBanMutation.mutate({ userId: selectedUser.id, banned: !selectedUser.is_banned })}
+                                  disabled={
+                                    setLicenseMutation.isPending ||
+                                    extendLicenseMutation.isPending ||
+                                    revokeLicenseMutation.isPending ||
+                                    setBanMutation.isPending ||
+                                    deleteUserMutation.isPending
+                                  }
+                                >
+                                  {selectedUser.is_banned ? "Разбан" : "Бан"}
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  className="w-full"
+                                  onClick={() => {
+                                    if (confirm(`Удалить пользователя ${selectedUser.username}? Это необратимо.`)) {
+                                      deleteUserMutation.mutate({ userId: selectedUser.id });
+                                    }
+                                  }}
+                                  disabled={
+                                    setLicenseMutation.isPending ||
+                                    extendLicenseMutation.isPending ||
+                                    revokeLicenseMutation.isPending ||
+                                    setBanMutation.isPending ||
+                                    deleteUserMutation.isPending
+                                  }
+                                >
+                                  Удалить пользователя
+                                </Button>
+                              </CardContent>
+                            </Card>
+                          )}
+                        </div>
+                      )}
+
             </div>
           )}
 
