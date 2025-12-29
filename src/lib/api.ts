@@ -423,6 +423,9 @@ export const adminApi = {
       inactive_days?: number | null;
       platform?: 'android' | 'ios' | 'desktop' | null;
       region?: string | null;
+      has_donations?: boolean | null;
+      sort_by?: 'created_at' | 'last_login_at' | 'total_coins' | 'today_coins' | 'last_7d_coins' | 'last_30d_coins' | null;
+      sort_dir?: 'asc' | 'desc' | null;
       limit?: number;
       offset?: number;
     } = {}
@@ -434,6 +437,9 @@ export const adminApi = {
       inactive_days: params.inactive_days ?? undefined,
       platform: params.platform ?? undefined,
       region: params.region?.trim() || undefined,
+      has_donations: params.has_donations === true ? '1' : undefined,
+      sort_by: params.sort_by ?? undefined,
+      sort_dir: params.sort_dir ?? undefined,
       limit: params.limit ?? 50,
       offset: params.offset ?? 0,
     });

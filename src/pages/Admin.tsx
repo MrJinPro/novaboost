@@ -29,6 +29,11 @@ const Admin = () => {
   const [platform, setPlatform] = useState<"" | "android" | "ios" | "desktop">("");
   const [region, setRegion] = useState<string>("");
   const [tariffId, setTariffId] = useState<string>("");
+  const [hasDonations, setHasDonations] = useState<boolean>(false);
+  const [sortBy, setSortBy] = useState<
+    "created_at" | "last_login_at" | "total_coins" | "today_coins" | "last_7d_coins" | "last_30d_coins"
+  >("created_at");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [offset, setOffset] = useState(0);
   const [selectedPlanByUserId, setSelectedPlanByUserId] = useState<Record<string, string | null>>({});
 
@@ -58,8 +63,8 @@ const Admin = () => {
   });
 
   const usersQueryKey = useMemo(
-    () => ["admin", "users", { q, activity, inactiveDays, platform, region, tariffId, offset }],
-    [q, activity, inactiveDays, platform, region, tariffId, offset]
+    () => ["admin", "users", { q, activity, inactiveDays, platform, region, tariffId, hasDonations, sortBy, sortDir, offset }],
+    [q, activity, inactiveDays, platform, region, tariffId, hasDonations, sortBy, sortDir, offset]
   );
 
   const usersQuery = useQuery({
@@ -72,6 +77,9 @@ const Admin = () => {
         platform: platform || null,
         region: region || null,
         tariff_id: isSuperadmin ? (tariffId || null) : null,
+        has_donations: hasDonations ? true : null,
+        sort_by: sortBy,
+        sort_dir: sortDir,
         limit: PAGE_SIZE,
         offset,
       }),
@@ -355,6 +363,44 @@ const Admin = () => {
                         }}
                         className="w-full sm:w-56"
                       />
+
+                      <Select
+                        value={hasDonations ? "donations" : "all"}
+                        onValueChange={(v) => {
+                          setHasDonations(v === "donations");
+                          setOffset(0);
+                        }}
+                      >
+                        <SelectTrigger className="w-full sm:w-56">
+                          <SelectValue placeholder="Аналитика" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Аналитика: все</SelectItem>
+                          <SelectItem value="donations">Только с донатами</SelectItem>
+                        </SelectContent>
+                      </Select>
+
+                      <Select
+                        value={`${sortBy}:${sortDir}`}
+                        onValueChange={(v) => {
+                          const [sb, sd] = String(v).split(":");
+                          setSortBy((sb as any) || "created_at");
+                          setSortDir(sd === "asc" ? "asc" : "desc");
+                          setOffset(0);
+                        }}
+                      >
+                        <SelectTrigger className="w-full sm:w-64">
+                          <SelectValue placeholder="Сортировка" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="created_at:desc">Новые (создан)</SelectItem>
+                          <SelectItem value="last_login_at:desc">Последний логин</SelectItem>
+                          <SelectItem value="total_coins:desc">Coins: всего</SelectItem>
+                          <SelectItem value="today_coins:desc">Coins: сегодня</SelectItem>
+                          <SelectItem value="last_7d_coins:desc">Coins: 7 дней</SelectItem>
+                          <SelectItem value="last_30d_coins:desc">Coins: 30 дней</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
 
                     {isSuperadmin && (
