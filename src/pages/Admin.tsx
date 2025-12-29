@@ -303,8 +303,8 @@ const Admin = () => {
                 <div className="text-sm text-destructive">Не удалось загрузить пользователей</div>
               ) : (
                 <div className="space-y-3">
-                  <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                  <div className="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+                    <div>
                       <Select
                         value={activity || "__all__"}
                         onValueChange={(v) => {
@@ -312,7 +312,7 @@ const Admin = () => {
                           setOffset(0);
                         }}
                       >
-                        <SelectTrigger className="w-full sm:w-56">
+                        <SelectTrigger className="w-full">
                           <SelectValue placeholder="Активность" />
                         </SelectTrigger>
                         <SelectContent>
@@ -321,8 +321,10 @@ const Admin = () => {
                           <SelectItem value="inactive">Только неактивные</SelectItem>
                         </SelectContent>
                       </Select>
+                    </div>
 
-                      {activity === "inactive" && (
+                    {activity === "inactive" && (
+                      <div>
                         <Input
                           type="number"
                           min={1}
@@ -332,11 +334,13 @@ const Admin = () => {
                             setInactiveDays(Number.isFinite(n) && n > 0 ? n : 30);
                             setOffset(0);
                           }}
-                          className="w-full sm:w-40"
+                          className="w-full"
                           placeholder="Дней"
                         />
-                      )}
+                      </div>
+                    )}
 
+                    <div>
                       <Select
                         value={platform || "__all__"}
                         onValueChange={(v) => {
@@ -344,7 +348,7 @@ const Admin = () => {
                           setOffset(0);
                         }}
                       >
-                        <SelectTrigger className="w-full sm:w-56">
+                        <SelectTrigger className="w-full">
                           <SelectValue placeholder="Платформа" />
                         </SelectTrigger>
                         <SelectContent>
@@ -354,7 +358,9 @@ const Admin = () => {
                           <SelectItem value="desktop">Desktop</SelectItem>
                         </SelectContent>
                       </Select>
+                    </div>
 
+                    <div>
                       <Input
                         placeholder="Регион (например RU)"
                         value={region}
@@ -362,9 +368,11 @@ const Admin = () => {
                           setRegion(e.target.value);
                           setOffset(0);
                         }}
-                        className="w-full sm:w-56"
+                        className="w-full"
                       />
+                    </div>
 
+                    <div>
                       <Select
                         value={hasDonations ? "donations" : "all"}
                         onValueChange={(v) => {
@@ -373,7 +381,7 @@ const Admin = () => {
                           setOffset(0);
                         }}
                       >
-                        <SelectTrigger className="w-full sm:w-56">
+                        <SelectTrigger className="w-full">
                           <SelectValue placeholder="Аналитика" />
                         </SelectTrigger>
                         <SelectContent>
@@ -381,7 +389,9 @@ const Admin = () => {
                           <SelectItem value="donations">Только с донатами</SelectItem>
                         </SelectContent>
                       </Select>
+                    </div>
 
+                    <div>
                       <Select
                         value={topPreset}
                         onValueChange={(v) => {
@@ -401,7 +411,7 @@ const Admin = () => {
                           setOffset(0);
                         }}
                       >
-                        <SelectTrigger className="w-full sm:w-56">
+                        <SelectTrigger className="w-full">
                           <SelectValue placeholder="Топ" />
                         </SelectTrigger>
                         <SelectContent>
@@ -412,7 +422,9 @@ const Admin = () => {
                           <SelectItem value="all">Топ: всё время</SelectItem>
                         </SelectContent>
                       </Select>
+                    </div>
 
+                    <div className="lg:col-span-2 xl:col-span-2">
                       <Select
                         value={`${sortBy}:${sortDir}`}
                         onValueChange={(v) => {
@@ -423,7 +435,7 @@ const Admin = () => {
                           setOffset(0);
                         }}
                       >
-                        <SelectTrigger className="w-full sm:w-64">
+                        <SelectTrigger className="w-full">
                           <SelectValue placeholder="Сортировка" />
                         </SelectTrigger>
                         <SelectContent>
@@ -438,7 +450,7 @@ const Admin = () => {
                     </div>
 
                     {isSuperadmin && (
-                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                      <div className="lg:col-span-2 xl:col-span-2">
                         <Select
                           value={tariffId || "__all__"}
                           onValueChange={(v) => {
@@ -447,7 +459,7 @@ const Admin = () => {
                           }}
                           disabled={plansQuery.isLoading || plansQuery.isError}
                         >
-                          <SelectTrigger className="w-full sm:w-64">
+                          <SelectTrigger className="w-full">
                             <SelectValue placeholder="Тариф" />
                           </SelectTrigger>
                           <SelectContent>
@@ -462,24 +474,24 @@ const Admin = () => {
                     )}
                   </div>
 
-                  <div className="rounded-xl border border-border/50">
-                  <Table className="table-fixed w-full">
+                  <div className="rounded-xl border border-border/50 overflow-x-auto">
+                  <Table className="w-full table-auto">
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-56 whitespace-normal">Пользователь</TableHead>
-                        <TableHead>Online</TableHead>
-                        <TableHead className="w-64 whitespace-normal">Устройство</TableHead>
-                        <TableHead>Регион</TableHead>
-                        <TableHead>Последний логин</TableHead>
-                        <TableHead>TikTok</TableHead>
-                        <TableHead>Последний LIVE</TableHead>
-                        <TableHead className="w-36 whitespace-normal">Подарки</TableHead>
-                        <TableHead className="w-56 whitespace-normal">Топ доноры</TableHead>
-                        <TableHead>Роль</TableHead>
-                        <TableHead>Статус</TableHead>
-                        {isSuperadmin && <TableHead>Тариф</TableHead>}
-                        {isSuperadmin && <TableHead>Лицензия до</TableHead>}
-                        {isSuperadmin && <TableHead>Действия</TableHead>}
+                        <TableHead className="w-56 h-auto py-3 align-top whitespace-normal leading-tight">Пользователь</TableHead>
+                        <TableHead className="h-auto py-3 align-top whitespace-nowrap">Online</TableHead>
+                        <TableHead className="w-64 h-auto py-3 align-top whitespace-normal leading-tight">Устройство</TableHead>
+                        <TableHead className="h-auto py-3 align-top whitespace-nowrap">Регион</TableHead>
+                        <TableHead className="h-auto py-3 align-top whitespace-nowrap">Последний логин</TableHead>
+                        <TableHead className="h-auto py-3 align-top whitespace-nowrap">TikTok</TableHead>
+                        <TableHead className="h-auto py-3 align-top whitespace-nowrap">Последний LIVE</TableHead>
+                        <TableHead className="w-36 h-auto py-3 align-top whitespace-normal leading-tight">Подарки</TableHead>
+                        <TableHead className="w-56 h-auto py-3 align-top whitespace-normal leading-tight">Топ доноры</TableHead>
+                        <TableHead className="h-auto py-3 align-top whitespace-nowrap">Роль</TableHead>
+                        <TableHead className="h-auto py-3 align-top whitespace-nowrap">Статус</TableHead>
+                        {isSuperadmin && <TableHead className="h-auto py-3 align-top whitespace-nowrap">Тариф</TableHead>}
+                        {isSuperadmin && <TableHead className="h-auto py-3 align-top whitespace-nowrap">Лицензия до</TableHead>}
+                        {isSuperadmin && <TableHead className="h-auto py-3 align-top whitespace-nowrap">Действия</TableHead>}
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -550,25 +562,25 @@ const Admin = () => {
 
                           return (
                             <TableRow key={u.id}>
-                              <TableCell className="font-medium whitespace-normal break-words">
+                              <TableCell className="font-medium align-top whitespace-normal break-words">
                                 <div>{u.username}</div>
                                 <div className="text-xs text-muted-foreground break-words">{u.email || "—"}</div>
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="align-top">
                                 {u.online_now ? (
                                   <span className="text-sm">online</span>
                                 ) : (
                                   <span className="text-sm text-muted-foreground">offline</span>
                                 )}
                               </TableCell>
-                              <TableCell className="text-muted-foreground whitespace-normal break-words text-xs">
+                              <TableCell className="align-top text-muted-foreground whitespace-normal break-words text-xs leading-snug">
                                 {deviceLine || "—"}
                               </TableCell>
-                              <TableCell className="text-muted-foreground">{u.region || "—"}</TableCell>
-                              <TableCell className="text-muted-foreground">{lastLogin || "—"}</TableCell>
-                              <TableCell className="text-muted-foreground">{u.tiktok_username || "—"}</TableCell>
-                              <TableCell className="text-muted-foreground">{lastLive || "—"}</TableCell>
-                              <TableCell className="text-muted-foreground whitespace-normal break-words">
+                              <TableCell className="align-top text-muted-foreground whitespace-nowrap">{u.region || "—"}</TableCell>
+                              <TableCell className="align-top text-muted-foreground whitespace-nowrap">{lastLogin || "—"}</TableCell>
+                              <TableCell className="align-top text-muted-foreground whitespace-nowrap">{u.tiktok_username || "—"}</TableCell>
+                              <TableCell className="align-top text-muted-foreground whitespace-nowrap">{lastLive || "—"}</TableCell>
+                              <TableCell className="align-top text-muted-foreground whitespace-normal break-words">
                                 <div className="text-sm">{giftsLine}</div>
                                 <div className="text-xs">today {u.today_coins ?? 0} • 7d {u.last_7d_coins ?? 0} • 30d {u.last_30d_coins ?? 0}</div>
                                 <div className="text-[11px] text-muted-foreground mt-1">gift top all: {topGiftsAll || "—"}</div>
@@ -576,20 +588,20 @@ const Admin = () => {
                                 <div className="text-[11px] text-muted-foreground">gift top 7d: {topGifts7d || "—"}</div>
                                 <div className="text-[11px] text-muted-foreground">gift top 30d: {topGifts30d || "—"}</div>
                               </TableCell>
-                              <TableCell className="text-muted-foreground whitespace-normal break-words text-xs">
+                              <TableCell className="align-top text-muted-foreground whitespace-normal break-words text-xs leading-snug">
                                 <div className="text-[11px]">all: {topDonorsAll || "—"}</div>
                                 <div className="text-[11px]">today: {topDonorsToday || "—"}</div>
                                 <div className="text-[11px]">7d: {topDonors7d || "—"}</div>
                                 <div className="text-[11px]">30d: {topDonors30d || "—"}</div>
                               </TableCell>
-                              <TableCell>
+                              <TableCell className="align-top">
                                 {isSuperadmin ? (
                                   <Select
                                     value={u.role}
                                     onValueChange={(value) => setRoleMutation.mutate({ userId: u.id, role: value })}
                                     disabled={setRoleMutation.isPending || rolesQuery.isLoading || rolesQuery.isError}
                                   >
-                                    <SelectTrigger className="w-44">
+                                    <SelectTrigger className="w-full min-w-36">
                                       <SelectValue placeholder="Выберите роль" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -605,7 +617,7 @@ const Admin = () => {
                                 )}
                               </TableCell>
 
-                              <TableCell>
+                              <TableCell className="align-top">
                                 {status === "blocked" ? (
                                   <span className="text-sm text-destructive">blocked</span>
                                 ) : status === "expired" ? (
@@ -616,7 +628,7 @@ const Admin = () => {
                               </TableCell>
 
                               {isSuperadmin && (
-                                <TableCell>
+                                <TableCell className="align-top">
                                   <Select
                                     value={
                                       selectedPlanByUserId[u.id] !== undefined
@@ -639,7 +651,7 @@ const Admin = () => {
                                       revokeLicenseMutation.isPending
                                     }
                                   >
-                                    <SelectTrigger className="w-56">
+                                    <SelectTrigger className="w-full min-w-44">
                                       <SelectValue placeholder="Тариф" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -669,10 +681,11 @@ const Admin = () => {
                               )}
 
                               {isSuperadmin && (
-                                <TableCell>
-                                  <div className="flex gap-2 flex-wrap">
+                                <TableCell className="align-top">
+                                  <div className="flex flex-col gap-2 w-40">
                                     <Button
                                       variant="outline"
+                                      className="w-full"
                                       onClick={() => {
                                         const selected =
                                           selectedPlanByUserId[u.id] !== undefined
@@ -692,6 +705,7 @@ const Admin = () => {
                                     </Button>
                                     <Button
                                       variant="outline"
+                                      className="w-full"
                                       onClick={() => extendLicenseMutation.mutate({ userId: u.id, extendDays: 30 })}
                                       disabled={
                                         !u.license_expires_at ||
@@ -704,6 +718,7 @@ const Admin = () => {
                                     </Button>
                                     <Button
                                       variant="outline"
+                                      className="w-full"
                                       onClick={() => revokeLicenseMutation.mutate({ userId: u.id })}
                                       disabled={
                                         !u.license_expires_at ||
@@ -719,6 +734,7 @@ const Admin = () => {
 
                                     <Button
                                       variant="outline"
+                                      className="w-full"
                                       onClick={() => setBanMutation.mutate({ userId: u.id, banned: !u.is_banned })}
                                       disabled={
                                         setLicenseMutation.isPending ||
@@ -733,6 +749,7 @@ const Admin = () => {
 
                                     <Button
                                       variant="outline"
+                                      className="w-full"
                                       onClick={() => {
                                         if (confirm(`Удалить пользователя ${u.username}? Это необратимо.`)) {
                                           deleteUserMutation.mutate({ userId: u.id });
