@@ -221,20 +221,19 @@ const Admin = () => {
 
   const paidPlans = plansQuery.data?.items || [];
 
-  const tariffFilterOptions = useMemo(() => {
+  const tariffFilterOptions = (() => {
     const base = [
       { id: "__all__", label: "Все тарифы" },
       { id: "nova_free_streamer", label: "free" },
     ];
     const rest = paidPlans.map((p) => ({ id: p.id, label: p.id }));
     const seen = new Set<string>();
-    const items = [...base, ...rest].filter((x) => {
+    return [...base, ...rest].filter((x) => {
       if (seen.has(x.id)) return false;
       seen.add(x.id);
       return true;
     });
-    return items;
-  }, [paidPlans]);
+  })();
 
   const columnsCount = isSuperadmin ? 16 : 13;
 
