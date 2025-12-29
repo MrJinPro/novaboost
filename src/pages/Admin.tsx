@@ -235,7 +235,7 @@ const Admin = () => {
     });
   })();
 
-  const columnsCount = isSuperadmin ? 16 : 13;
+  const columnsCount = isSuperadmin ? 14 : 11;
 
   const hasPrev = offset > 0;
   const hasNext = offset + PAGE_SIZE < total;
@@ -382,21 +382,19 @@ const Admin = () => {
                     )}
                   </div>
 
-                  <div className="rounded-xl border border-border/50 overflow-x-auto">
-                  <Table>
+                  <div className="rounded-xl border border-border/50">
+                  <Table className="table-fixed w-full">
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Логин</TableHead>
-                        <TableHead>Email</TableHead>
+                        <TableHead className="w-56 whitespace-normal">Пользователь</TableHead>
                         <TableHead>Online</TableHead>
-                        <TableHead>Платформа</TableHead>
+                        <TableHead className="w-64 whitespace-normal">Устройство</TableHead>
                         <TableHead>Регион</TableHead>
                         <TableHead>Последний логин</TableHead>
                         <TableHead>TikTok</TableHead>
-                        <TableHead>TT accs</TableHead>
                         <TableHead>Последний LIVE</TableHead>
-                        <TableHead>LIVE TikTok</TableHead>
-                        <TableHead>Создан</TableHead>
+                        <TableHead className="w-36 whitespace-normal">Подарки</TableHead>
+                        <TableHead className="w-56 whitespace-normal">Топ доноры</TableHead>
                         <TableHead>Роль</TableHead>
                         <TableHead>Статус</TableHead>
                         {isSuperadmin && <TableHead>Тариф</TableHead>}
@@ -413,15 +411,6 @@ const Admin = () => {
                         </TableRow>
                       ) : (
                         users.map((u) => {
-                          const created = u.created_at
-                            ? new Date(u.created_at).toLocaleString("ru-RU", {
-                                year: "numeric",
-                                month: "2-digit",
-                                day: "2-digit",
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })
-                            : "";
 
                           const lastLogin = u.last_login_at
                             ? new Date(u.last_login_at).toLocaleString("ru-RU", {
@@ -447,10 +436,21 @@ const Admin = () => {
                             ? "blocked"
                             : (u.status || "active");
 
+                          const deviceLine = [u.client_os || u.platform, u.device]
+                            .filter((x) => !!(x && String(x).trim()))
+                            .join(" • ");
+
+                          const giftsLine = `${u.total_gifts ?? 0} / ${u.total_coins ?? 0}`;
+                          const topDonorsLine = (u.top_donors || [])
+                            .map((d) => `${d.username} (${d.total_coins})`)
+                            .join(", ");
+
                           return (
                             <TableRow key={u.id}>
-                              <TableCell className="font-medium">{u.username}</TableCell>
-                              <TableCell className="text-muted-foreground">{u.email || "—"}</TableCell>
+                              <TableCell className="font-medium whitespace-normal break-words">
+                                <div>{u.username}</div>
+                                <div className="text-xs text-muted-foreground break-words">{u.email || "—"}</div>
+                              </TableCell>
                               <TableCell>
                                 {u.online_now ? (
                                   <span className="text-sm">online</span>
@@ -458,14 +458,20 @@ const Admin = () => {
                                   <span className="text-sm text-muted-foreground">offline</span>
                                 )}
                               </TableCell>
-                              <TableCell className="text-muted-foreground">{u.platform || "—"}</TableCell>
+                              <TableCell className="text-muted-foreground whitespace-normal break-words text-xs">
+                                {deviceLine || "—"}
+                              </TableCell>
                               <TableCell className="text-muted-foreground">{u.region || "—"}</TableCell>
                               <TableCell className="text-muted-foreground">{lastLogin || "—"}</TableCell>
                               <TableCell className="text-muted-foreground">{u.tiktok_username || "—"}</TableCell>
-                              <TableCell className="text-muted-foreground">{u.tiktok_accounts_count ?? 0}</TableCell>
                               <TableCell className="text-muted-foreground">{lastLive || "—"}</TableCell>
-                              <TableCell className="text-muted-foreground">{u.last_live_tiktok_username || "—"}</TableCell>
-                              <TableCell className="text-muted-foreground">{created || "—"}</TableCell>
+                              <TableCell className="text-muted-foreground whitespace-normal break-words">
+                                <div className="text-sm">{giftsLine}</div>
+                                <div className="text-xs">today {u.today_coins ?? 0}</div>
+                              </TableCell>
+                              <TableCell className="text-muted-foreground whitespace-normal break-words text-xs">
+                                {topDonorsLine || "—"}
+                              </TableCell>
                               <TableCell>
                                 {isSuperadmin ? (
                                   <Select
