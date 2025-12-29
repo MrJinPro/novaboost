@@ -34,6 +34,7 @@ const Admin = () => {
     "created_at" | "last_login_at" | "total_coins" | "today_coins" | "last_7d_coins" | "last_30d_coins"
   >("created_at");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [topPreset, setTopPreset] = useState<"off" | "today" | "7d" | "30d" | "all">("off");
   const [offset, setOffset] = useState(0);
   const [selectedPlanByUserId, setSelectedPlanByUserId] = useState<Record<string, string | null>>({});
 
@@ -368,6 +369,7 @@ const Admin = () => {
                         value={hasDonations ? "donations" : "all"}
                         onValueChange={(v) => {
                           setHasDonations(v === "donations");
+                          setTopPreset("off");
                           setOffset(0);
                         }}
                       >
@@ -381,11 +383,43 @@ const Admin = () => {
                       </Select>
 
                       <Select
+                        value={topPreset}
+                        onValueChange={(v) => {
+                          const vv = (v as any) as "off" | "today" | "7d" | "30d" | "all";
+                          setTopPreset(vv);
+                          if (vv === "off") {
+                            setOffset(0);
+                            return;
+                          }
+
+                          setHasDonations(true);
+                          setSortDir("desc");
+                          if (vv === "today") setSortBy("today_coins");
+                          else if (vv === "7d") setSortBy("last_7d_coins");
+                          else if (vv === "30d") setSortBy("last_30d_coins");
+                          else setSortBy("total_coins");
+                          setOffset(0);
+                        }}
+                      >
+                        <SelectTrigger className="w-full sm:w-56">
+                          <SelectValue placeholder="Топ" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="off">Топ: выкл</SelectItem>
+                          <SelectItem value="today">Топ: сегодня</SelectItem>
+                          <SelectItem value="7d">Топ: 7 дней</SelectItem>
+                          <SelectItem value="30d">Топ: 30 дней</SelectItem>
+                          <SelectItem value="all">Топ: всё время</SelectItem>
+                        </SelectContent>
+                      </Select>
+
+                      <Select
                         value={`${sortBy}:${sortDir}`}
                         onValueChange={(v) => {
                           const [sb, sd] = String(v).split(":");
                           setSortBy((sb as any) || "created_at");
                           setSortDir(sd === "asc" ? "asc" : "desc");
+                          setTopPreset("off");
                           setOffset(0);
                         }}
                       >
