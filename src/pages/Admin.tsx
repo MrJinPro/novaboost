@@ -254,55 +254,55 @@ const Admin = () => {
       <Header isLoggedIn={true} />
 
       <main className="pt-32 pb-20 px-4">
-        <div className="container mx-auto max-w-6xl space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+        <div className="container mx-auto max-w-6xl space-y-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <div className="flex items-center gap-2">
                 <Users className="h-5 w-5 text-primary" />
-                Админка
-              </CardTitle>
-              <CardDescription>
-                Пользователи
-                {isSuperadmin ? " (режим superadmin)" : ""}
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Поиск по логину / email"
-                    value={q}
-                    onChange={(e) => {
-                      setQ(e.target.value);
-                      setOffset(0);
-                    }}
-                    className="w-full sm:w-80"
-                  />
-                  <Button
-                    variant="outline"
-                    onClick={() => queryClient.invalidateQueries({ queryKey: ["admin", "users"] })}
-                    disabled={usersQuery.isFetching}
-                  >
-                    Обновить
-                  </Button>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <Link to="/admin/notifications">
-                    <Button variant="outline">Уведомления</Button>
-                  </Link>
-                  <div className="text-sm text-muted-foreground">Всего: {total}</div>
-                </div>
+                <h1 className="text-lg font-semibold leading-none">Админка</h1>
               </div>
+              <div className="mt-1 text-sm text-muted-foreground">
+                Пользователи{isSuperadmin ? " (режим superadmin)" : ""}
+              </div>
+            </div>
 
-              {usersQuery.isLoading ? (
-                <div className="py-10 flex items-center justify-center">
-                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                </div>
-              ) : usersQuery.isError ? (
-                <div className="text-sm text-destructive">Не удалось загрузить пользователей</div>
-              ) : (
-                <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Link to="/admin/notifications">
+                <Button variant="outline">Уведомления</Button>
+              </Link>
+              <div className="text-sm text-muted-foreground whitespace-nowrap">Всего: {total}</div>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <Input
+                placeholder="Поиск по логину / email"
+                value={q}
+                onChange={(e) => {
+                  setQ(e.target.value);
+                  setOffset(0);
+                }}
+                className="w-full sm:w-80"
+              />
+              <Button
+                variant="outline"
+                onClick={() => queryClient.invalidateQueries({ queryKey: ["admin", "users"] })}
+                disabled={usersQuery.isFetching}
+              >
+                Обновить
+              </Button>
+            </div>
+          </div>
+
+          {usersQuery.isLoading ? (
+            <div className="py-10 flex items-center justify-center">
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            </div>
+          ) : usersQuery.isError ? (
+            <div className="text-sm text-destructive">Не удалось загрузить пользователей</div>
+          ) : (
+            <div className="space-y-3">
                   <div className="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
                     <div>
                       <Select
@@ -474,7 +474,7 @@ const Admin = () => {
                     )}
                   </div>
 
-                  <div className="rounded-xl border border-border/50 overflow-x-auto">
+                  <div className="rounded-xl border border-border/50 bg-card overflow-x-auto">
                   <Table className="w-full table-auto">
                     <TableHeader>
                       <TableRow>
@@ -775,28 +775,26 @@ const Admin = () => {
                     </TableBody>
                   </Table>
                 </div>
-                </div>
-              )}
+            </div>
+          )}
 
-              <div className="flex items-center justify-between">
-                <Button variant="outline" onClick={() => setOffset((v) => Math.max(0, v - PAGE_SIZE))} disabled={!hasPrev}>
-                  Назад
-                </Button>
-                <div className="text-sm text-muted-foreground">
-                  {total === 0 ? "" : `${offset + 1}–${Math.min(offset + PAGE_SIZE, total)} из ${total}`}
-                </div>
-                <Button variant="outline" onClick={() => setOffset((v) => v + PAGE_SIZE)} disabled={!hasNext}>
-                  Вперёд
-                </Button>
-              </div>
+          <div className="flex items-center justify-between">
+            <Button variant="outline" onClick={() => setOffset((v) => Math.max(0, v - PAGE_SIZE))} disabled={!hasPrev}>
+              Назад
+            </Button>
+            <div className="text-sm text-muted-foreground">
+              {total === 0 ? "" : `${offset + 1}–${Math.min(offset + PAGE_SIZE, total)} из ${total}`}
+            </div>
+            <Button variant="outline" onClick={() => setOffset((v) => v + PAGE_SIZE)} disabled={!hasNext}>
+              Вперёд
+            </Button>
+          </div>
 
-              {!isSuperadmin && (
-                <div className="text-xs text-muted-foreground">
-                  Управление ролями/лицензиями/баном доступно только для superadmin
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          {!isSuperadmin && (
+            <div className="text-xs text-muted-foreground">
+              Управление ролями/лицензиями/баном доступно только для superadmin
+            </div>
+          )}
         </div>
       </main>
 
