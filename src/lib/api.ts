@@ -339,6 +339,15 @@ export interface AdminUserItem {
   last_7d_coins?: number;
   last_30d_coins?: number;
   top_donors?: Array<{ username: string; total_coins: number; total_gifts: number }>;
+  top_donors_all?: Array<{ username: string; coins: number; total_coins: number; total_gifts: number }>;
+  top_donors_today?: Array<{ username: string; coins: number; total_coins: number; total_gifts: number }>;
+  top_donors_7d?: Array<{ username: string; coins: number; total_coins: number; total_gifts: number }>;
+  top_donors_30d?: Array<{ username: string; coins: number; total_coins: number; total_gifts: number }>;
+
+  top_gifts_all?: Array<{ name: string; coins: number; count: number }>;
+  top_gifts_today?: Array<{ name: string; coins: number; count: number }>;
+  top_gifts_7d?: Array<{ name: string; coins: number; count: number }>;
+  top_gifts_30d?: Array<{ name: string; coins: number; count: number }>;
   is_banned?: boolean;
   banned_at?: string | null;
   banned_reason?: string | null;

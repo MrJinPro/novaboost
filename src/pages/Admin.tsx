@@ -441,8 +441,31 @@ const Admin = () => {
                             .join(" • ");
 
                           const giftsLine = `${u.total_gifts ?? 0} / ${u.total_coins ?? 0}`;
-                          const topDonorsLine = (u.top_donors || [])
-                            .map((d) => `${d.username} (${d.total_coins})`)
+
+                          const topDonorsAll = (u.top_donors_all || u.top_donors || [])
+                            .map((d: any) => `${d.username} (${d.coins ?? d.total_coins ?? 0})`)
+                            .join(", ");
+                          const topDonorsToday = (u.top_donors_today || [])
+                            .map((d) => `${d.username} (${d.coins ?? 0})`)
+                            .join(", ");
+                          const topDonors7d = (u.top_donors_7d || [])
+                            .map((d) => `${d.username} (${d.coins ?? 0})`)
+                            .join(", ");
+                          const topDonors30d = (u.top_donors_30d || [])
+                            .map((d) => `${d.username} (${d.coins ?? 0})`)
+                            .join(", ");
+
+                          const topGiftsAll = (u.top_gifts_all || [])
+                            .map((g) => `${g.name} (${g.coins ?? 0})`)
+                            .join(", ");
+                          const topGiftsToday = (u.top_gifts_today || [])
+                            .map((g) => `${g.name} (${g.coins ?? 0})`)
+                            .join(", ");
+                          const topGifts7d = (u.top_gifts_7d || [])
+                            .map((g) => `${g.name} (${g.coins ?? 0})`)
+                            .join(", ");
+                          const topGifts30d = (u.top_gifts_30d || [])
+                            .map((g) => `${g.name} (${g.coins ?? 0})`)
                             .join(", ");
 
                           return (
@@ -467,10 +490,17 @@ const Admin = () => {
                               <TableCell className="text-muted-foreground">{lastLive || "—"}</TableCell>
                               <TableCell className="text-muted-foreground whitespace-normal break-words">
                                 <div className="text-sm">{giftsLine}</div>
-                                <div className="text-xs">today {u.today_coins ?? 0}</div>
+                                <div className="text-xs">today {u.today_coins ?? 0} • 7d {u.last_7d_coins ?? 0} • 30d {u.last_30d_coins ?? 0}</div>
+                                <div className="text-[11px] text-muted-foreground mt-1">gift top all: {topGiftsAll || "—"}</div>
+                                <div className="text-[11px] text-muted-foreground">gift top today: {topGiftsToday || "—"}</div>
+                                <div className="text-[11px] text-muted-foreground">gift top 7d: {topGifts7d || "—"}</div>
+                                <div className="text-[11px] text-muted-foreground">gift top 30d: {topGifts30d || "—"}</div>
                               </TableCell>
                               <TableCell className="text-muted-foreground whitespace-normal break-words text-xs">
-                                {topDonorsLine || "—"}
+                                <div className="text-[11px]">all: {topDonorsAll || "—"}</div>
+                                <div className="text-[11px]">today: {topDonorsToday || "—"}</div>
+                                <div className="text-[11px]">7d: {topDonors7d || "—"}</div>
+                                <div className="text-[11px]">30d: {topDonors30d || "—"}</div>
                               </TableCell>
                               <TableCell>
                                 {isSuperadmin ? (
