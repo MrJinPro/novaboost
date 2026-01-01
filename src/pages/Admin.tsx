@@ -32,6 +32,17 @@ const fmtDateTimeRu = (iso?: string | null): string => {
   });
 };
 
+const fmtUptimeRu = (sec?: number | null): string => {
+  const total = typeof sec === "number" && Number.isFinite(sec) ? Math.max(0, Math.floor(sec)) : 0;
+  if (!total) return "—";
+  const days = Math.floor(total / 86400);
+  const hours = Math.floor((total % 86400) / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  const hh = String(hours).padStart(2, "0");
+  const mm = String(minutes).padStart(2, "0");
+  return days > 0 ? `${days}д ${hh}:${mm}` : `${hh}:${mm}`;
+};
+
 const platformRu = (platform?: string | null): string => {
   const p = String(platform || "").toLowerCase();
   if (p === "android") return "Android";
@@ -115,6 +126,14 @@ const Admin = () => {
     queryFn: plansApi.getPlans,
     enabled: isSuperadmin,
     retry: false,
+  });
+
+  const serverStatusQuery = useQuery({
+    queryKey: ["admin", "server-status"],
+    queryFn: adminApi.getServerStatus,
+    enabled: canView,
+    retry: false,
+    refetchInterval: 15000,
   });
 
   const setRoleMutation = useMutation({
@@ -295,6 +314,61 @@ const Admin = () => {
               <div className="text-sm text-muted-foreground whitespace-nowrap">Всего: {total}</div>
             </div>
           </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Состояние сервера</CardTitle>
+              <CardDescription>Обновляется каждые 15 секунд</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {serverStatusQuery.isError ? (
+                <div className="text-sm text-destructive">Не удалось загрузить метрики</div>
+              ) : (
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+                  <div className="rounded-md border p-3">
+                    <div className="text-xs text-muted-foreground">CPU</div>
+                    <div className="text-lg font-semibold">
+                      {serverStatusQuery.data?.cpu_percent != null ? `${serverStatusQuery.data.cpu_percent.toFixed(1)}%` : "—"}
+                    </div>
+                  </div>
+
+                  <div className="rounded-md border p-3">
+                    <div className="text-xs text-muted-foreground">RAM</div>
+                    <div className="text-lg font-semibold">
+                      {serverStatusQuery.data?.mem_used_percent != null
+                        ? `${serverStatusQuery.data.mem_used_percent.toFixed(1)}%`
+                        : "—"}
+                    </div>
+                  </div>
+
+                  <div className="rounded-md border p-3">
+                    <div className="text-xs text-muted-foreground">Disk</div>
+                    <div className="text-lg font-semibold">
+                      {serverStatusQuery.data?.disk_used_percent != null
+                        ? `${serverStatusQuery.data.disk_used_percent.toFixed(1)}%`
+                        : "—"}
+                    </div>
+                  </div>
+
+                  <div className="rounded-md border p-3">
+                    <div className="text-xs text-muted-foreground">Load</div>
+                    <div className="text-sm font-medium">
+                      {serverStatusQuery.data?.load1 != null
+                        ? `${serverStatusQuery.data.load1.toFixed(2)} / ${serverStatusQuery.data.load5?.toFixed(2) ?? "—"} / ${
+                            serverStatusQuery.data.load15?.toFixed(2) ?? "—"
+                          }`
+                        : "—"}
+                    </div>
+                  </div>
+
+                  <div className="rounded-md border p-3">
+                    <div className="text-xs text-muted-foreground">Uptime</div>
+                    <div className="text-sm font-medium">{fmtUptimeRu(serverStatusQuery.data?.uptime_sec ?? null)}</div>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">

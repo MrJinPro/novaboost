@@ -313,6 +313,26 @@ export interface RolesResponse {
   items: RoleItem[];
 }
 
+export interface AdminServerStatusResponse {
+  status: string;
+  now: string;
+  hostname: string | null;
+  pid: number;
+  load1: number | null;
+  load5: number | null;
+  load15: number | null;
+  cpu_percent: number | null;
+  cpu_count: number | null;
+  mem_total_mb: number | null;
+  mem_used_mb: number | null;
+  mem_used_percent: number | null;
+  disk_total_gb: number | null;
+  disk_used_gb: number | null;
+  disk_used_percent: number | null;
+  disk_path: string;
+  uptime_sec: number | null;
+}
+
 export interface AdminUserItem {
   id: string;
   username: string;
@@ -410,6 +430,7 @@ const buildQuery = (params: Record<string, string | number | undefined | null>):
 
 export const adminApi = {
   listRoles: () => apiRequest<RolesResponse>('/v2/admin/roles'),
+  getServerStatus: () => apiRequest<AdminServerStatusResponse>('/v2/admin/server/status'),
   createNotification: (req: CreateNotificationRequest) =>
     apiRequest<CreateNotificationResponse>('/v2/admin/notifications', {
       method: 'POST',
