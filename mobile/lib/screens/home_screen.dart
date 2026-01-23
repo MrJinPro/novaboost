@@ -64,6 +64,17 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final ws = context.watch<WsProvider>();
     final notifications = context.watch<NotificationsProvider>();
     final live = ws.tiktokConnected;
+    final email = (auth.email ?? '').trim();
+    final hasEmail = email.isNotEmpty;
+
+    // Force user to set email for password recovery.
+    // Best-effort: move to Profile tab after build.
+    if (!hasEmail && _currentIndex != 4) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        setState(() => _currentIndex = 4);
+      });
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -137,7 +148,16 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       body: IndexedStack(index: _currentIndex, children: _pages),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
-        onTap: (i) => setState(() => _currentIndex = i),
+        onTap: (i) {
+          if (!hasEmail && i != 4) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Добавьте email в профиле для продолжения')),
+            );
+            setState(() => _currentIndex = 4);
+            return;
+          }
+          setState(() => _currentIndex = i);
+        },
         backgroundColor: AppColors.cardBackground,
         selectedItemColor: AppColors.accentPurple,
         unselectedItemColor: AppColors.secondaryText,
